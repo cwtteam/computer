@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>CWT — Barcode Scanner</title>
+<script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:#0D1B2A; --blue:#1E6FD9; --teal:#0ABFBC; --green:#10B981;
+  --red:#EF4444; --gold:#F59E0B; --white:#F8FAFC; --muted:#94A3B8;
+  --border:rgba(255,255,255,0.1); --card:rgba(255,255,255,0.05);
+  --font:'IBM Plex Sans Thai',sans-serif; --mono:'IBM Plex Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;font-family:var(--font);background:var(--navy);color:var(--white);overflow-x:hidden}
+
+/* ── Layout ── */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.header{background:linear-gradient(135deg,#0d1b2a,#1a3a5c);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-icon{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--teal));display:flex;align-items:center;justify-content:center;font-size:16px}
+.brand h1{font-size:14px;font-weight:700}
+.brand p{font-size:10px;color:var(--muted)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.main{flex:1;padding:16px;max-width:600px;margin:0 auto;width:100%}
+
+/* ── Mode Tabs ── */
+.mode-tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:20px}
+.mode-tab{padding:10px 4px;border-radius:10px;border:1.5px solid var(--border);background:var(--card);cursor:pointer;text-align:center;font-size:11px;font-weight:600;color:var(--muted);transition:.2s}
+.mode-tab:hover{border-color:var(--blue);color:var(--white)}
+.mode-tab.active{background:linear-gradient(135deg,rgba(30,111,217,.25),rgba(10,191,188,.15));border-color:var(--teal);color:var(--white)}
+.mode-tab .tab-icon{font-size:18px;display:block;margin-bottom:4px}
+
+/* ── Scanner Box ── */
+.scanner-section{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px}
+.scanner-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.scanner-label .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite}
+
+.barcode-input-wrap{position:relative;margin-bottom:12px}
+.barcode-input{
+  width:100%; padding:16px 50px 16px 18px;
+  font-family:var(--mono); font-size:18px; font-weight:600;
+  background:rgba(0,0,0,0.3); border:2px solid var(--blue);
+  border-radius:12px; color:var(--white); outline:none;
+  letter-spacing:.05em; transition:.2s;
+  caret-color:var(--teal);
+}
+.barcode-input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(10,191,188,.15)}
+.barcode-input.scanning{border-color:var(--gold);background:rgba(245,158,11,.05)}
+.barcode-input.success{border-color:var(--green);background:rgba(16,185,129,.05)}
+.barcode-input.error{border-color:var(--red);background:rgba(239,68,68,.05)}
+.barcode-icon{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:22px;pointer-events:none}
+
+.scan-hint{font-size:11px;color:var(--muted);text-align:center;padding:6px}
+
+/* ── Manual Info Fields ── */
+.fields-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.field-group{display:flex;flex-direction:column;gap:5px}
+.field-label{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.field-input{background:rgba(0,0,0,0.25);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--white);font-family:var(--font);font-size:13px;outline:none;transition:.2s;width:100%}
+.field-input:focus{border-color:var(--blue)}
+option{background:#1a2f45}
+.field-input-full{grid-column:span 2}
+
+/* ── Submit Button ── */
+.submit-btn{
+  width:100%; padding:15px;
+  background:linear-gradient(135deg,var(--blue),var(--teal));
+  border:none; border-radius:12px; color:#fff;
+  font-family:var(--font); font-size:15px; font-weight:700;
+  cursor:pointer; transition:.2s; display:flex;
+  align-items:center; justify-content:center; gap:8px;
+}
+.submit-btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(30,111,217,.3)}
+.submit-btn:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.submit-btn.loading{background:rgba(255,255,255,.1)}
+
+/* ── Feedback ── */
+.feedback{
+  border-radius:12px; padding:14px 16px;
+  margin-top:12px; display:none; align-items:center; gap:12px;
+  animation:slideIn .3s ease;
+}
+.feedback.show{display:flex}
+.feedback.success{background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.25);color:#6ee7b7}
+.feedback.error{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.25);color:#fca5a5}
+.feedback-icon{font-size:22px;flex-shrink:0}
+.feedback-text strong{display:block;font-size:13px;font-weight:700}
+.feedback-text span{font-size:11px;opacity:.8}
+@keyframes slideIn{from{transform:translateY(-8px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* ── History ── */
+.history-section{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.history-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.history-title{font-size:13px;font-weight:700}
+.clear-btn{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;padding:4px 8px;border-radius:6px}
+.clear-btn:hover{background:rgba(255,255,255,.05);color:var(--red)}
+.history-list{max-height:300px;overflow-y:auto}
+.history-item{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;animation:slideIn .2s ease}
+.history-item:last-child{border-bottom:none}
+.hist-mode{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.hist-mode.inbound{background:rgba(16,185,129,.2)}
+.hist-mode.outbound{background:rgba(30,111,217,.2)}
+.hist-mode.inventory{background:rgba(245,158,11,.2)}
+.hist-mode.returns{background:rgba(239,68,68,.2)}
+.hist-info{flex:1;min-width:0}
+.hist-barcode{font-family:var(--mono);font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-meta{font-size:10px;color:var(--muted);margin-top:2px}
+.hist-status{font-size:10px;font-weight:700}
+.hist-status.ok{color:var(--green)}
+.hist-status.err{color:var(--red)}
+.hist-status.pending{color:var(--gold)}
+.empty-history{text-align:center;padding:30px;color:var(--muted);font-size:12px}
+
+/* ── Sheet Config ── */
+.config-section{background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:12px;padding:14px 16px;margin-bottom:16px}
+.config-title{font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.config-input{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:9px 12px;color:var(--white);font-family:var(--mono);font-size:11px;outline:none;margin-bottom:8px}
+.config-input:focus{border-color:var(--gold)}
+.config-hint{font-size:10px;color:var(--muted);line-height:1.5}
+.config-hint a{color:var(--gold);text-decoration:none}
+.config-hint code{background:rgba(255,255,255,.05);padding:1px 5px;border-radius:4px;font-family:var(--mono)}
+
+/* ── Quantity Counter ── */
+.qty-row{display:flex;align-items:center;gap:10px}
+.qty-btn{width:36px;height:36px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid var(--border);color:var(--white);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.qty-btn:hover{background:rgba(30,111,217,.3);border-color:var(--blue)}
+.qty-display{flex:1;text-align:center;font-family:var(--mono);font-size:22px;font-weight:700;color:var(--teal)}
+
+/* ── CAMERA ── */
+.cam-btn {
+  width:100%; padding:13px;
+  background:rgba(10,191,188,.12); border:2px solid rgba(10,191,188,.35);
+  border-radius:12px; color:var(--teal);
+  font-family:var(--font); font-size:14px; font-weight:700;
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  gap:8px; margin-bottom:12px; transition:.2s;
+  -webkit-user-select:none; touch-action:manipulation;
+}
+.cam-btn:active { transform:scale(.98); background:rgba(10,191,188,.2); }
+.cam-btn.active { background:rgba(239,68,68,.12); border-color:rgba(239,68,68,.35); color:var(--red); }
+
+.cam-wrap {
+  display:none; position:relative; border-radius:14px;
+  overflow:hidden; background:#000; margin-bottom:12px;
+  border:2px solid var(--teal);
+}
+.cam-wrap.show { display:block; }
+.cam-video { width:100%; height:240px; object-fit:cover; display:block; }
+.cam-overlay {
+  position:absolute; inset:0; display:flex;
+  align-items:center; justify-content:center; pointer-events:none;
+}
+.cam-frame {
+  width:200px; height:120px; border:3px solid var(--teal);
+  border-radius:10px; box-shadow:0 0 0 9999px rgba(0,0,0,.45);
+  animation:camPulse 1.5s ease-in-out infinite;
+}
+@keyframes camPulse { 0%,100%{border-color:var(--teal)} 50%{border-color:#fff} }
+.cam-line {
+  position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+  width:180px; height:2px; background:rgba(10,191,188,.7);
+  animation:scan 1.8s ease-in-out infinite;
+}
+@keyframes scan { 0%{top:35%} 50%{top:65%} 100%{top:35%} }
+.cam-hint-txt {
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  font-size:11px; font-weight:600; color:#fff; white-space:nowrap;
+  background:rgba(0,0,0,.5); padding:4px 12px; border-radius:20px;
+}
+.cam-select {
+  width:100%; background:rgba(0,0,0,.3); border:1px solid var(--border);
+  border-radius:8px; padding:8px 12px; color:var(--white);
+  font-family:var(--font); font-size:11px; outline:none;
+  margin-bottom:8px; display:none;
+}
+.cam-select.show { display:block; }
+
+/* ── TOAST ── */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0}
+.toggle-label{font-size:12px;color:var(--muted)}
+.toggle{position:relative;width:38px;height:22px}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,.15);border-radius:22px;cursor:pointer;transition:.3s}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s}
+input:checked+.toggle-slider{background:var(--green)}
+input:checked+.toggle-slider:before{transform:translateX(16px)}
+
+/* ── Responsive ── */
+@media(max-width:480px){
+  .fields-grid{grid-template-columns:1fr}
+  .field-input-full{grid-column:span 1}
+  .mode-tabs{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- Header -->
+<div class="header">
+  <div class="brand">
+    <div class="brand-icon">📡</div>
+    <div>
+      <h1>CWT Scanner</h1>
+      <p>Barcode → Google Sheets</p>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <div class="status-dot" id="status-dot"></div>
+    <span id="status-text" style="font-size:11px;color:var(--muted)">พร้อมสแกน</span>
+    <span onclick="toggleConfigPanel()" style="font-size:18px;cursor:pointer;padding:4px;opacity:0.6" title="ตั้งค่า">⚙️</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- Google Sheet Config -->
+  <div class="config-section" id="config-section">
+    <div class="config-title">⚙️ ตั้งค่า Google Sheets</div>
+    <input class="config-input" id="sheet-url" placeholder="วาง Google Apps Script Web App URL ที่นี่..."
+           oninput="saveConfig()">
+    <div class="config-hint">
+      <strong style="color:var(--gold)">วิธีตั้งค่า:</strong><br>
+      1. เปิด Google Sheet ของคุณ → <strong>Extensions → Apps Script</strong><br>
+      2. วาง code จากไฟล์ <code>cwt_appscript.js</code> ที่แนบมา<br>
+      3. Deploy → <strong>New deployment → Web app</strong> → Execute as: <em>Me</em> → Anyone<br>
+      4. Copy URL มาวางในช่องนี้<br>
+      <a href="#" onclick="toggleConfig()">▼ ซ่อน</a>
+    </div>
+    <div class="toggle-row">
+      <span class="toggle-label">🔊 เสียงเมื่อสแกนสำเร็จ</span>
+      <label class="toggle"><input type="checkbox" id="sound-toggle" checked><div class="toggle-slider"></div></label>
+    </div>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <div class="mode-tab active" data-mode="inbound" onclick="setMode('inbound',this)">
+      <span class="tab-icon">📥</span>Inbound
+    </div>
+    <div class="mode-tab" data-mode="outbound" onclick="setMode('outbound',this)">
+      <span class="tab-icon">📤</span>Outbound
+    </div>
+    <div class="mode-tab" data-mode="inventory" onclick="setMode('inventory',this)">
+      <span class="tab-icon">🔍</span>ค้นหา
+    </div>
+    <div class="mode-tab" data-mode="returns" onclick="setMode('returns',this)">
+      <span class="tab-icon">↩️</span>ตีคืน
+    </div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="scanner-section">
+    <div class="scanner-label">
+      <span class="dot"></span>
+      <span id="scanner-label-text">สแกน Barcode — Inbound</span>
+    </div>
+
+    <div class="barcode-input-wrap">
+      <input type="text" class="barcode-input" id="barcode-input"
+             placeholder="สแกน หรือพิมพ์ Barcode..."
+             autocomplete="off" autocorrect="off" spellcheck="false"
+             onkeydown="handleKey(event)" oninput="handleInput(this)">
+      <span class="barcode-icon" id="barcode-icon">📷</span>
+    </div>
+    <div class="scan-hint">เครื่องสแกน USB/Bluetooth พิมพ์ค่าแล้วกด Enter อัตโนมัติ</div>
+
+    <!-- Camera Scanner -->
+    <button class="cam-btn" id="cam-btn" onclick="toggleCamera()">
+      📷 เปิดกล้องสแกน Barcode
+    </button>
+    <select class="cam-select" id="cam-select" onchange="switchCamera()"></select>
+    <div class="cam-wrap" id="cam-wrap">
+      <video class="cam-video" id="cam-video" playsinline autoplay muted></video>
+      <div class="cam-overlay">
+        <div class="cam-frame"></div>
+        <div class="cam-line"></div>
+        <div class="cam-hint-txt">วาง Barcode ในกรอบ</div>
+      </div>
+    </div>
+
+    <!-- Extra Fields by Mode -->
+    <div id="extra-fields">
+      <!-- Inbound fields -->
+      <div id="fields-inbound" class="fields-grid">
+        <div class="field-group">
+          <label class="field-label">Lot No.</label>
+          <input class="field-input" id="f-lot" placeholder="Lot1, Lot2...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Supplier</label>
+          <select class="field-input" id="f-supplier">
+            <option value="LB1">LB1</option>
+            <option value="LB1.1">LB1.1</option>
+            <option value="LB2">LB2</option>
+            <option value="LB3">LB3</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label class="field-label">จำนวน (คู่)</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div class="qty-display" id="qty-display">1</div>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">SIZE</label>
+          <input class="field-input" id="f-size" placeholder="9, 9.5, One Size">
+        </div>
+        <div class="field-group field-input-full" style="grid-column:span 2">
+          <label class="field-label">หมายเหตุ</label>
+          <input class="field-input" id="f-note" placeholder="หมายเหตุ (ไม่บังคับ)">
+        </div>
+      </div>
+
+      <!-- Outbound fields -->
+      <div id="fields-outbound" class="fields-grid" style="display:none">
+        <div class="field-group">
+          <label class="field-label">Order ID</label>
+          <input class="field-input" id="fo-order" placeholder="SMBB-...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">จำนวน (คู่)</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div class="qty-display" id="qty-display">1</div>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">ผู้รับสินค้า</label>
+          <input class="field-input" id="fo-recipient" placeholder="ชื่อลูกค้า">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Lot No.</label>
+          <input class="field-input" id="fo-lot" placeholder="Lot1...">
+        </div>
+      </div>
+
+      <!-- Inventory search — no extra fields -->
+      <div id="fields-inventory" style="display:none">
+        <p style="font-size:12px;color:var(--muted);text-align:center;padding:10px 0">
+          สแกน Barcode เพื่อค้นหาสินค้าใน Inventory
+        </p>
+      </div>
+
+      <!-- Returns fields -->
+      <div id="fields-returns" class="fields-grid" style="display:none">
+        <div class="field-group">
+          <label class="field-label">Order ID</label>
+          <input class="field-input" id="fr-order" placeholder="SMBB-...">
+        </div>
+        <div class="field-group">
+          <label class="field-label">จำนวน</label>
+          <div class="qty-row">
+            <button class="qty-btn" onclick="changeQty(-1)">−</button>
+            <div class="qty-display" id="qty-display">1</div>
+            <button class="qty-btn" onclick="changeQty(1)">+</button>
+          </div>
+        </div>
+        <div class="field-group">
+          <label class="field-label">สาเหตุ</label>
+          <input class="field-input" id="fr-cause" placeholder="เช่น โดนน้ำ, ตำหนิ">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Lot No.</label>
+          <input class="field-input" id="fr-lot" placeholder="Lot...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <button class="submit-btn" id="submit-btn" onclick="submitScan()">
+      <span id="submit-icon">📡</span>
+      <span id="submit-text">ส่งไป Google Sheets</span>
+    </button>
+
+    <!-- Feedback -->
+    <div class="feedback" id="feedback">
+      <div class="feedback-icon" id="fb-icon"></div>
+      <div class="feedback-text">
+        <strong id="fb-title"></strong>
+        <span id="fb-detail"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="history-header">
+      <span class="history-title">📋 ประวัติการสแกน</span>
+      <button class="clear-btn" onclick="clearHistory()">ล้างทั้งหมด</button>
+    </div>
+    <div id="history-list">
+      <div class="empty-history">ยังไม่มีประวัติ — เริ่มสแกนได้เลย</div>
+    </div>
+  </div>
+
+</div><!-- end main -->
+</div><!-- end app -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let currentMode = 'inbound';
+let qty = 1;
+let scanHistory = JSON.parse(localStorage.getItem('cwt_scan_history') || '[]');
+let isSubmitting = false;
+let scanBuffer = '';
+let scanTimer = null;
+
+const modeConfig = {
+  inbound:   { label:'สแกน Barcode — Inbound',   icon:'📥', sheet:'Inbound'    },
+  outbound:  { label:'สแกน Barcode — Outbound',  icon:'📤', sheet:'Outbound'   },
+  inventory: { label:'ค้นหาสินค้าใน Inventory',   icon:'🔍', sheet:'Inventory'  },
+  returns:   { label:'สแกน Barcode — ตีคืน',     icon:'↩️', sheet:'Returns'    },
+};
+
+// ═══════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════
+function loadConfig() {
+  const url = localStorage.getItem('cwt_sheet_url') || '';
+  document.getElementById('sheet-url').value = url;
+  // ซ่อนอัตโนมัติถ้า URL ถูกตั้งค่าแล้ว
+  if(url) document.getElementById('config-section').style.display = 'none';
+  updateStatus();
+}
+function saveConfig() {
+  localStorage.setItem('cwt_sheet_url', document.getElementById('sheet-url').value.trim());
+  updateStatus();
+}
+function toggleConfig() {
+  const sec = document.getElementById('config-section');
+  sec.style.display = sec.style.display === 'none' ? '' : 'none';
+}
+function toggleConfigPanel() {
+  const sec = document.getElementById('config-section');
+  const isHidden = sec.style.display === 'none' || sec.style.display === '';
+  const url = localStorage.getItem('cwt_sheet_url') || '';
+  // ถ้า URL ยังไม่ได้ตั้ง → ซ่อนอยู่ = false
+  const actuallyHidden = url ? (sec.style.display === 'none') : false;
+  sec.style.display = actuallyHidden ? 'block' : 'none';
+  if(actuallyHidden) setTimeout(()=>sec.scrollIntoView({behavior:'smooth',block:'nearest'}), 50);
+}
+
+// ═══════════════════════════════════════════════════════
+// MODE
+// ═══════════════════════════════════════════════════════
+function setMode(mode, el) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('scanner-label-text').textContent = modeConfig[mode].label;
+  document.getElementById('barcode-icon').textContent = modeConfig[mode].icon;
+  // Show/hide fields
+  ['inbound','outbound','inventory','returns'].forEach(m => {
+    const el = document.getElementById('fields-'+m);
+    if(el) el.style.display = m===mode ? (m==='inventory'?'block':'grid') : 'none';
+  });
+  qty = 1; updateQtyDisplay();
+  clearFeedback();
+  focusInput();
+}
+
+// ═══════════════════════════════════════════════════════
+// BARCODE INPUT — รองรับทั้ง USB scanner และ keyboard
+// ═══════════════════════════════════════════════════════
+function handleKey(e) {
+  if(e.key === 'Enter') {
+    e.preventDefault();
+    const val = document.getElementById('barcode-input').value.trim();
+    if(val) submitScan();
+  }
+}
+
+function handleInput(el) {
+  // Detect rapid input (scanner sends chars very fast)
+  clearTimeout(scanTimer);
+  el.classList.add('scanning');
+  el.classList.remove('success','error');
+  document.getElementById('barcode-icon').textContent = '⚡';
+
+  scanTimer = setTimeout(() => {
+    el.classList.remove('scanning');
+    document.getElementById('barcode-icon').textContent = modeConfig[currentMode].icon;
+    // Auto-submit if looks like scanner (not manual typing = input came fast)
+  }, 200);
+}
+
+function focusInput() {
+  setTimeout(() => document.getElementById('barcode-input').focus(), 100);
+}
+
+// ═══════════════════════════════════════════════════════
+// QTY
+// ═══════════════════════════════════════════════════════
+function changeQty(delta) {
+  qty = Math.max(1, qty + delta);
+  updateQtyDisplay();
+}
+function updateQtyDisplay() {
+  document.querySelectorAll('#qty-display').forEach(el => el.textContent = qty);
+}
+
+// ═══════════════════════════════════════════════════════
+// SUBMIT → GOOGLE SHEETS via Apps Script
+// ═══════════════════════════════════════════════════════
+async function submitScan() {
+  const barcode = document.getElementById('barcode-input').value.trim();
+  if(!barcode) { showFeedback('error','กรุณาสแกน Barcode ก่อน','ช่อง Barcode ว่างอยู่'); return; }
+
+  const sheetUrl = document.getElementById('sheet-url').value.trim();
+  if(!sheetUrl) {
+    showFeedback('error','ยังไม่ได้ตั้งค่า Google Sheets URL','กรุณาวาง Apps Script URL ด้านบน');
+    return;
+  }
+
+  if(isSubmitting) return;
+  isSubmitting = true;
+  setSubmitLoading(true);
+
+  // Build payload
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const payload = {
+    mode:     currentMode,
+    sheet:    modeConfig[currentMode].sheet,
+    barcode,
+    date:     dateStr,
+    time:     timeStr,
+    qty,
+    // mode-specific fields
+    lot:      getVal('f-lot','fo-lot','fr-lot'),
+    supplier: getVal('f-supplier'),
+    size:     getVal('f-size'),
+    note:     getVal('f-note'),
+    order_id: getVal('fo-order','fr-order'),
+    recipient:getVal('fo-recipient'),
+    cause:    getVal('fr-cause'),
+  };
+
+  // Add to history (pending)
+  const histItem = { ...payload, status:'pending', timestamp: now.toISOString() };
+  addToHistory(histItem);
+
+  try {
+    // POST to Google Apps Script
+    const res = await fetch(sheetUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    let result;
+    try { result = await res.json(); } catch { result = { success: res.ok }; }
+
+    if(res.ok && result.success !== false) {
+      // Success
+      updateHistoryStatus('ok');
+      showFeedback('success',
+        `✅ บันทึกสำเร็จ — ${modeConfig[currentMode].sheet}`,
+        `${barcode} | ${dateStr} ${timeStr} | จำนวน: ${qty}`
+      );
+      playBeep('success');
+      flashInput('success');
+      clearForm();
+    } else {
+      throw new Error(result.error || 'Server error');
+    }
+  } catch(err) {
+    updateHistoryStatus('err');
+    showFeedback('error','❌ ส่งไม่สำเร็จ', err.message || 'ตรวจสอบ URL หรือ internet');
+    playBeep('error');
+    flashInput('error');
+  }
+
+  isSubmitting = false;
+  setSubmitLoading(false);
+  focusInput();
+}
+
+function getVal(...ids) {
+  for(const id of ids) {
+    const el = document.getElementById(id);
+    if(el && el.value) return el.value.trim();
+  }
+  return '';
+}
+
+function clearForm() {
+  document.getElementById('barcode-input').value = '';
+  // Keep lot/supplier between scans (common workflow)
+}
+
+function setSubmitLoading(loading) {
+  const btn = document.getElementById('submit-btn');
+  const icon = document.getElementById('submit-icon');
+  const text = document.getElementById('submit-text');
+  btn.disabled = loading;
+  icon.textContent = loading ? '⏳' : '📡';
+  text.textContent = loading ? 'กำลังส่ง...' : 'ส่งไป Google Sheets';
+}
+
+// ═══════════════════════════════════════════════════════
+// FEEDBACK
+// ═══════════════════════════════════════════════════════
+function showFeedback(type, title, detail) {
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback show ${type}`;
+  document.getElementById('fb-icon').textContent = type==='success' ? '✅' : '❌';
+  document.getElementById('fb-title').textContent = title;
+  document.getElementById('fb-detail').textContent = detail;
+  if(type==='success') setTimeout(clearFeedback, 4000);
+}
+function clearFeedback() {
+  document.getElementById('feedback').className = 'feedback';
+}
+function flashInput(type) {
+  const el = document.getElementById('barcode-input');
+  el.classList.add(type);
+  setTimeout(() => el.classList.remove(type), 1500);
+}
+
+// ═══════════════════════════════════════════════════════
+// SOUND
+// ═══════════════════════════════════════════════════════
+function playBeep(type) {
+  if(!document.getElementById('sound-toggle').checked) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = type==='success' ? 880 : 220;
+    osc.type = type==='success' ? 'sine' : 'sawtooth';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.3);
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════════
+// HISTORY
+// ═══════════════════════════════════════════════════════
+let lastHistId = null;
+function addToHistory(item) {
+  item.id = Date.now();
+  lastHistId = item.id;
+  scanHistory.unshift(item);
+  if(scanHistory.length > 50) scanHistory = scanHistory.slice(0,50);
+  saveHistory();
+  renderHistory();
+}
+function updateHistoryStatus(status) {
+  const item = scanHistory.find(h => h.id === lastHistId);
+  if(item) { item.status = status; saveHistory(); renderHistory(); }
+}
+function saveHistory() {
+  localStorage.setItem('cwt_scan_history', JSON.stringify(scanHistory));
+}
+function clearHistory() {
+  if(confirm('ล้างประวัติทั้งหมด?')) { scanHistory=[]; saveHistory(); renderHistory(); }
+}
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  if(!scanHistory.length) {
+    container.innerHTML = '<div class="empty-history">ยังไม่มีประวัติ — เริ่มสแกนได้เลย</div>';
+    return;
+  }
+  container.innerHTML = scanHistory.map(h => {
+    const modeIcon = {inbound:'📥',outbound:'📤',inventory:'🔍',returns:'↩️'}[h.mode]||'📦';
+    const statusText = {ok:'✅ สำเร็จ', err:'❌ ผิดพลาด', pending:'⏳ รอ'}[h.status]||'';
+    const statusClass = {ok:'ok',err:'err',pending:'pending'}[h.status]||'';
+    return `<div class="history-item">
+      <div class="hist-mode ${h.mode}">${modeIcon}</div>
+      <div class="hist-info">
+        <div class="hist-barcode">${h.barcode}</div>
+        <div class="hist-meta">${h.date} ${h.time} · ${h.sheet} · x${h.qty}${h.lot?' · '+h.lot:''}</div>
+      </div>
+      <div class="hist-status ${statusClass}">${statusText}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// CAMERA SCANNER
+// ═══════════════════════════════════════════════════════
+let codeReader = null;
+let camActive  = false;
+let camStream  = null;
+
+async function toggleCamera() {
+  if(camActive) { stopCamera(); return; }
+  await startCamera();
+}
+
+async function startCamera() {
+  const btn  = document.getElementById('cam-btn');
+  const wrap = document.getElementById('cam-wrap');
+  const sel  = document.getElementById('cam-select');
+  btn.innerHTML = '⏳ กำลังเปิดกล้อง...';
+
+  try {
+    if(window.ZXing) {
+      codeReader = new ZXing.BrowserMultiFormatReader();
+      const devices = await codeReader.listVideoInputDevices();
+      if(devices.length > 1) {
+        sel.innerHTML = devices.map((d,i)=>
+          `<option value="${d.deviceId}">${d.label||'กล้อง '+(i+1)}</option>`).join('');
+        const back = devices.find(d=>/back|rear|environment/i.test(d.label));
+        if(back) sel.value = back.deviceId;
+        sel.classList.add('show');
+      }
+      const deviceId = sel.value || devices[devices.length-1]?.deviceId;
+      codeReader.decodeFromVideoDevice(deviceId, 'cam-video', (result, err) => {
+        if(result) onScan(result.getText());
+      });
+    } else {
+      await startNativeCam();
+      return;
+    }
+    showCam(btn, wrap);
+  } catch(e) {
+    await startNativeCam();
+  }
+}
+
+async function startNativeCam() {
+  const btn  = document.getElementById('cam-btn');
+  const wrap = document.getElementById('cam-wrap');
+  const video = document.getElementById('cam-video');
+  try {
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video:{ facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
+    });
+    video.srcObject = camStream;
+    await video.play();
+    showCam(btn, wrap);
+
+    if('BarcodeDetector' in window) {
+      const det = new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','qr_code','upc_a','upc_e','itf']});
+      const loop = async () => {
+        if(!camActive) return;
+        try {
+          const barcodes = await det.detect(video);
+          if(barcodes.length > 0) { onScan(barcodes[0].rawValue); return; }
+        } catch(e) {}
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    } else {
+      // Browser ไม่รองรับ BarcodeDetector — แสดงกล้องแต่ต้องพิมพ์เอง
+      btn.innerHTML = '🔴 ปิดกล้อง (พิมพ์ barcode ด้านบน)';
+    }
+  } catch(e) {
+    document.getElementById('cam-btn').innerHTML = '📷 เปิดกล้องสแกน Barcode';
+    showFeedback('error','ไม่สามารถเปิดกล้องได้','กรุณาอนุญาตการเข้าถึงกล้องในเบราว์เซอร์');
+  }
+}
+
+function showCam(btn, wrap) {
+  camActive = true;
+  wrap.classList.add('show');
+  btn.innerHTML = '🔴 ปิดกล้อง';
+  btn.classList.add('active');
+}
+
+function onScan(code) {
+  if(!code || !camActive) return;
+  document.getElementById('barcode-input').value = code;
+  beep('success');
+  flashInput('success');
+  stopCamera();
+  showFeedback('success', '📷 สแกนสำเร็จ!', code);
+  setTimeout(submitScan, 400);
+}
+
+function stopCamera() {
+  camActive = false;
+  const btn  = document.getElementById('cam-btn');
+  const wrap = document.getElementById('cam-wrap');
+  wrap.classList.remove('show');
+  document.getElementById('cam-select').classList.remove('show');
+  btn.innerHTML = '📷 เปิดกล้องสแกน Barcode';
+  btn.classList.remove('active');
+  if(codeReader) { try{codeReader.reset();}catch(e){} codeReader=null; }
+  if(camStream)  { camStream.getTracks().forEach(t=>t.stop()); camStream=null; }
+  document.getElementById('cam-video').srcObject = null;
+}
+
+async function switchCamera() {
+  if(!codeReader || !camActive) return;
+  const deviceId = document.getElementById('cam-select').value;
+  codeReader.decodeFromVideoDevice(deviceId, 'cam-video', (result)=>{
+    if(result) onScan(result.getText());
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+loadConfig();
+renderHistory();
+focusInput();
+
+// Keep input focused (scanner sends to focused element)
+document.addEventListener('click', e => {
+  if(!e.target.matches('input,select,button,a')) focusInput();
+});
+
+// Status indicator
+function updateStatus() {
+  const url = document.getElementById('sheet-url').value.trim();
+  const dot = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  if(url) {
+    dot.style.background = 'var(--green)';
+    text.textContent = 'เชื่อมต่อ Sheets แล้ว';
+  } else {
+    dot.style.background = 'var(--gold)';
+    text.textContent = 'ยังไม่ได้ตั้งค่า URL';
+  }
+}
+document.getElementById('sheet-url').addEventListener('input', updateStatus);
+updateStatus();
+</script>
+</body>
+</html>
