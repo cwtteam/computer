@@ -274,6 +274,14 @@ input:checked+.toggle-slider:before{transform:translateX(16px)}
     <button class="cam-btn" id="cam-btn" onclick="toggleCamera()">
       📷 เปิดกล้องสแกน Barcode
     </button>
+    <!-- iOS fallback: ถ่ายรูป barcode แล้ว detect -->
+    <input type="file" id="ios-cam-input" accept="image/*" capture="environment"
+           style="display:none" onchange="handleIOSPhoto(event)">
+    <button class="cam-btn" id="ios-cam-btn"
+            onclick="document.getElementById('ios-cam-input').click()"
+            style="background:rgba(30,111,217,.12);border-color:rgba(30,111,217,.35);color:#93c5fd;display:none">
+      📱 ถ่ายรูป Barcode (iOS)
+    </button>
     <select class="cam-select" id="cam-select" onchange="switchCamera()"></select>
     <div class="cam-wrap" id="cam-wrap">
       <video class="cam-video" id="cam-video" playsinline autoplay muted></video>
@@ -799,6 +807,68 @@ function stopCamera() {
   document.getElementById('cam-video').srcObject = null;
 }
 
+// ── iOS Photo Barcode Detection ──────────────────────────
+async function handleIOSPhoto(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const btn = document.getElementById('ios-cam-btn');
+  btn.innerHTML = '⏳ กำลังอ่าน Barcode...';
+  btn.disabled = true;
+
+  try {
+    // ลอง ZXing ก่อน
+    if(window.ZXing) {
+      const reader = new ZXing.BrowserMultiFormatReader();
+      const img = document.createElement('img');
+      const url = URL.createObjectURL(file);
+      img.src = url;
+      await new Promise(r => img.onload = r);
+      try {
+        const result = await reader.decodeFromImageElement(img);
+        URL.revokeObjectURL(url);
+        onScan(result.getText());
+        btn.innerHTML = '📱 ถ่ายรูป Barcode (iOS)';
+        btn.disabled = false;
+        event.target.value = '';
+        return;
+      } catch(e) { URL.revokeObjectURL(url); }
+    }
+
+    // Fallback: BarcodeDetector
+    if('BarcodeDetector' in window) {
+      const detector = new BarcodeDetector();
+      const bitmap = await createImageBitmap(file);
+      const barcodes = await detector.detect(bitmap);
+      if(barcodes.length > 0) {
+        onScan(barcodes[0].rawValue);
+      } else {
+        showFeedback('error','ไม่พบ Barcode','ลองถ่ายใหม่ให้ชัดขึ้น หรือพิมพ์ตรงช่องบาร์โค้ด');
+      }
+    } else {
+      showFeedback('error','Browser ไม่รองรับ','กรุณาพิมพ์ Barcode ในช่องด้านบน หรือเปิดผ่าน HTTPS');
+    }
+  } catch(e) {
+    showFeedback('error','อ่าน Barcode ไม่ได้','ลองถ่ายใหม่ให้ชัดขึ้น');
+  }
+  btn.innerHTML = '📱 ถ่ายรูป Barcode (iOS)';
+  btn.disabled = false;
+  event.target.value = '';
+}
+
+// ── Detect iOS → show iOS button ─────────────────────────
+function detectPlatform() {
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isHTTPS = location.protocol === 'https:' || location.hostname === 'localhost';
+  if(isIOS && !isHTTPS) {
+    // iOS without HTTPS → hide stream cam, show photo button
+    document.getElementById('cam-btn').style.display = 'none';
+    document.getElementById('ios-cam-btn').style.display = 'flex';
+  } else if(isIOS && isHTTPS) {
+    // iOS with HTTPS → show both
+    document.getElementById('ios-cam-btn').style.display = 'flex';
+  }
+}
+
 async function switchCamera() {
   if(!codeReader || !camActive) return;
   const deviceId = document.getElementById('cam-select').value;
@@ -813,6 +883,7 @@ async function switchCamera() {
 loadConfig();
 renderHistory();
 focusInput();
+detectPlatform();
 
 // Keep input focused (scanner sends to focused element)
 document.addEventListener('click', e => {
