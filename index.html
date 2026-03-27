@@ -1,0 +1,2224 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CWT — Dropship Intelligence</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* Sidebar — dark navy (same as screenshot) */
+  --sb-bg:     #1A2B4A;
+  --sb-bg2:    #152238;
+  --sb-text:   #8FA8C8;
+  --sb-active: #FFFFFF;
+  --sb-active-bg: rgba(255,255,255,0.12);
+  --sb-border: rgba(255,255,255,0.07);
+
+  /* Main area — light theme */
+  --bg:        #F1F4F9;
+  --surface:   #FFFFFF;
+  --surface2:  #F7F9FC;
+  --text:      #1E293B;
+  --text2:     #334155;
+  --muted:     #64748B;
+  --muted2:    #94A3B8;
+  --border:    #E2E8F0;
+  --border2:   #CBD5E1;
+
+  /* Accent colors */
+  --blue:      #2563EB;
+  --blue2:     #3B82F6;
+  --blue-bg:   #EFF6FF;
+  --green:     #059669;
+  --green2:    #10B981;
+  --green-bg:  #ECFDF5;
+  --red:       #DC2626;
+  --red2:      #EF4444;
+  --red-bg:    #FEF2F2;
+  --gold:      #D97706;
+  --gold2:     #F59E0B;
+  --gold-bg:   #FFFBEB;
+  --teal:      #0891B2;
+  --teal-bg:   #ECFEFF;
+
+  --font: 'IBM Plex Sans Thai', sans-serif;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow2: 0 4px 12px rgba(0,0,0,0.08);
+  --transition: 0.18s cubic-bezier(0.4,0,0.2,1);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+html { font-size:14px; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:5px; height:5px; }
+::-webkit-scrollbar-track { background:var(--bg); }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+/* ── LAYOUT ── */
+.app { display:flex; height:100vh; }
+.sidebar {
+  width:220px; flex-shrink:0;
+  background: linear-gradient(180deg, var(--sb-bg) 0%, var(--sb-bg2) 100%);
+  border-right: 1px solid var(--sb-border);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; }
+.topbar {
+  height:56px; flex-shrink:0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display:flex; align-items:center;
+  padding:0 24px; gap:12px;
+  box-shadow: var(--shadow);
+  position:sticky; top:0; z-index:10;
+}
+.content { flex:1; overflow-y:auto; padding:24px; }
+
+/* ── SIDEBAR ── */
+.brand {
+  padding:20px 16px 16px;
+  border-bottom:1px solid var(--sb-border);
+}
+.brand-logo { display:flex; align-items:center; gap:10px; }
+.brand-icon {
+  width:36px; height:36px; border-radius:10px;
+  background:linear-gradient(135deg,#3B82F6,#0891B2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px;
+}
+.brand-text h2 { font-size:13px; font-weight:700; color:#FFFFFF; letter-spacing:0.02em; }
+.brand-text p  { font-size:10px; color:var(--sb-text); margin-top:1px; }
+
+.nav { padding:12px 8px; flex:1; overflow-y:auto; }
+.nav-section {
+  font-size:10px; font-weight:600; color:rgba(143,168,200,0.6);
+  text-transform:uppercase; letter-spacing:0.1em;
+  padding:10px 8px 4px;
+}
+.nav-item {
+  display:flex; align-items:center; gap:10px;
+  padding:9px 10px; border-radius:8px;
+  color:var(--sb-text); font-size:13px;
+  cursor:pointer; transition:var(--transition);
+  margin-bottom:2px;
+}
+.nav-item:hover { background:rgba(255,255,255,0.08); color:#FFFFFF; }
+.nav-item.active {
+  background: var(--sb-active-bg);
+  color: var(--sb-active);
+  font-weight:600;
+}
+.nav-item .ni { font-size:15px; width:20px; text-align:center; }
+.nav-badge {
+  margin-left:auto; background:var(--blue);
+  color:#fff; font-size:10px; font-weight:700;
+  padding:1px 6px; border-radius:10px;
+}
+.sidebar-footer {
+  padding:14px 16px;
+  border-top:1px solid var(--sb-border);
+}
+.user-row { display:flex; align-items:center; gap:8px; }
+.avatar {
+  width:32px; height:32px; border-radius:50%;
+  background:linear-gradient(135deg,#3B82F6,#0891B2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:700; color:#fff;
+}
+.user-info p { font-size:12px; font-weight:600; color:#FFFFFF; }
+.user-info span { font-size:10px; color:#4ADE80; }
+.online-dot { display:inline-block; width:6px; height:6px; background:#4ADE80; border-radius:50%; margin-right:3px; }
+
+/* ── TOPBAR ── */
+.page-title { font-size:16px; font-weight:700; color:var(--text); flex:1; }
+.search-input {
+  display:flex; align-items:center; gap:6px;
+  background:var(--bg); border:1px solid var(--border);
+  border-radius:8px; padding:7px 14px; width:280px;
+  transition:var(--transition);
+}
+.search-input:focus-within { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+.search-input input {
+  background:transparent; border:none; outline:none;
+  color:var(--text); font-family:var(--font); font-size:12px; width:100%;
+}
+.search-input input::placeholder { color:var(--muted2); }
+.search-icon { color:var(--muted2); font-size:13px; }
+
+.btn {
+  padding:8px 16px; border-radius:8px; border:none;
+  cursor:pointer; font-family:var(--font); font-size:12px;
+  font-weight:600; transition:var(--transition);
+}
+.btn-primary { background:var(--blue); color:#fff; box-shadow:0 1px 3px rgba(37,99,235,0.3); }
+.btn-primary:hover { background:var(--blue2); transform:translateY(-1px); }
+.btn-outline {
+  background:var(--surface); color:var(--text2);
+  border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+.btn-outline:hover { background:var(--bg); border-color:var(--border2); }
+.btn-sm { padding:5px 12px; font-size:11px; }
+
+/* ── SECTIONS ── */
+.section { display:none; }
+.section.active { display:block; }
+
+/* ── KPI GRID ── */
+.kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:20px; }
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  transition: var(--transition);
+  position:relative; overflow:hidden;
+}
+.kpi-card:hover { box-shadow:var(--shadow2); transform:translateY(-1px); }
+.kpi-card.blue  { border-left:4px solid var(--blue2); }
+.kpi-card.green { border-left:4px solid var(--green2); }
+.kpi-card.gold  { border-left:4px solid var(--gold2); }
+.kpi-card.red   { border-left:4px solid var(--red2); }
+.kpi-label { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+.kpi-value { font-size:30px; font-weight:700; margin:8px 0 3px; font-family:var(--mono); }
+.kpi-sub { font-size:11px; color:var(--muted); }
+.kpi-card.blue  .kpi-value { color:var(--blue2); }
+.kpi-card.green .kpi-value { color:var(--green2); }
+.kpi-card.gold  .kpi-value { color:var(--gold2); }
+.kpi-card.red   .kpi-value { color:var(--red2); }
+
+/* ── PANELS ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow:hidden;
+  margin-bottom:20px;
+  box-shadow: var(--shadow);
+}
+.panel-header {
+  padding:14px 18px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  background:var(--surface);
+}
+.panel-title { font-size:13px; font-weight:700; color:var(--text); }
+.panel-body { padding:16px 18px; }
+.panel-body-flush { padding:0; }
+
+/* ── TABLE ── */
+.tbl-wrap { overflow-x:auto; }
+table { width:100%; border-collapse:collapse; }
+th {
+  padding:10px 14px; text-align:left;
+  font-size:10px; font-weight:700; color:var(--muted);
+  text-transform:uppercase; letter-spacing:0.06em;
+  border-bottom:1px solid var(--border);
+  background:var(--surface2);
+  white-space:nowrap;
+}
+td {
+  padding:10px 14px; border-bottom:1px solid var(--border);
+  font-size:12px; color:var(--text2);
+  white-space:nowrap;
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#F8FAFC; }
+
+/* ── BADGES ── */
+.badge {
+  display:inline-flex; align-items:center;
+  padding:3px 9px; border-radius:20px;
+  font-size:10px; font-weight:700; letter-spacing:0.02em;
+}
+.badge-green { background:var(--green-bg); color:var(--green); border:1px solid #A7F3D0; }
+.badge-blue  { background:var(--blue-bg);  color:var(--blue);  border:1px solid #BFDBFE; }
+.badge-gold  { background:var(--gold-bg);  color:var(--gold);  border:1px solid #FDE68A; }
+.badge-red   { background:var(--red-bg);   color:var(--red);   border:1px solid #FECACA; }
+.badge-gray  { background:#F1F5F9; color:var(--muted); border:1px solid var(--border); }
+.badge-teal  { background:var(--teal-bg);  color:var(--teal);  border:1px solid #A5F3FC; }
+
+/* ── GRID ── */
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px; }
+
+/* ── FILTER ROW ── */
+.filter-row {
+  display:flex; gap:10px; align-items:center;
+  margin-bottom:16px; flex-wrap:wrap;
+}
+.filter-select {
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text2); border-radius:8px;
+  padding:7px 12px; font-family:var(--font);
+  font-size:12px; cursor:pointer; outline:none;
+  box-shadow:var(--shadow);
+}
+.filter-select:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+option { background:var(--surface); color:var(--text); }
+
+/* ── SEARCH BOX ── */
+.search-box { display:flex; gap:8px; margin-bottom:16px; }
+.search-box input {
+  flex:1; background:var(--surface); border:1px solid var(--border);
+  color:var(--text); border-radius:8px; padding:9px 14px;
+  font-family:var(--font); font-size:13px; outline:none;
+  transition:var(--transition); box-shadow:var(--shadow);
+}
+.search-box input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+.search-box input::placeholder { color:var(--muted2); }
+
+/* ── STAT ROWS ── */
+.stat-row {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1px solid var(--border);
+}
+.stat-row:last-child { border-bottom:none; }
+.stat-label { font-size:12px; color:var(--muted); }
+.stat-value { font-size:13px; font-weight:700; font-family:var(--mono); color:var(--text); }
+
+/* ── PROGRESS BAR ── */
+.progress-wrap { margin-top:6px; }
+.progress-bar-bg { background:var(--border); border-radius:4px; height:5px; overflow:hidden; }
+.progress-bar-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,var(--blue),var(--teal)); transition:width 0.8s ease; }
+
+/* ── FINANCE GRID ── */
+.fin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+.fin-card {
+  background:var(--surface); border-radius:10px;
+  padding:16px 18px; border:1px solid var(--border);
+  box-shadow:var(--shadow);
+}
+.fin-card-label { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; }
+.fin-card-value { font-size:22px; font-weight:700; margin-top:6px; font-family:var(--mono); }
+.fin-card-value.green { color:var(--green); }
+.fin-card-value.blue  { color:var(--blue); }
+.fin-card-value.gold  { color:var(--gold); }
+.fin-card-value.red   { color:var(--red); }
+.fin-card-value.white { color:var(--text); }
+
+/* ── MODAL ── */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(15,23,42,0.5);
+  backdrop-filter:blur(4px); z-index:100;
+  display:none; align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; padding:28px; width:90%; max-width:560px;
+  max-height:85vh; overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,0.15);
+}
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+.modal-title { font-size:16px; font-weight:700; color:var(--text); }
+.modal-close { background:none; border:none; color:var(--muted); font-size:20px; cursor:pointer; }
+.modal-close:hover { color:var(--text); }
+.form-group { margin-bottom:16px; }
+.form-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; display:block; }
+.form-input {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  color:var(--text); border-radius:8px; padding:9px 12px;
+  font-family:var(--font); font-size:13px; outline:none; transition:var(--transition);
+}
+.form-input:focus { border-color:var(--blue); background:var(--surface); box-shadow:0 0 0 3px rgba(37,99,235,0.1); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-select {
+  width:100%; background:var(--bg); border:1px solid var(--border);
+  color:var(--text); border-radius:8px; padding:9px 12px;
+  font-family:var(--font); font-size:13px; outline:none; cursor:pointer;
+}
+.form-select:focus { border-color:var(--blue); }
+option { background:var(--surface); color:var(--text); }
+
+/* ── IMAGES ── */
+.img-thumb {
+  width:44px; height:44px; border-radius:8px;
+  object-fit:cover; border:1px solid var(--border);
+  cursor:pointer; transition:var(--transition);
+  background:var(--surface2);
+  box-shadow:var(--shadow);
+}
+.img-thumb:hover { transform:scale(1.08); border-color:var(--blue); box-shadow:var(--shadow2); }
+.img-placeholder {
+  width:44px; height:44px; border-radius:8px;
+  background:var(--surface2); border:1.5px dashed var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:16px; transition:var(--transition);
+  color:var(--muted2);
+}
+.img-placeholder:hover { border-color:var(--blue); background:var(--blue-bg); color:var(--blue); }
+
+/* Image lightbox */
+.img-modal {
+  position:fixed; inset:0; background:rgba(0,0,0,0.85);
+  backdrop-filter:blur(8px); z-index:200;
+  display:none; align-items:center; justify-content:center;
+  flex-direction:column; gap:16px;
+}
+.img-modal.open { display:flex; }
+.img-modal-img {
+  max-width:90vw; max-height:70vh;
+  border-radius:12px; border:1px solid rgba(255,255,255,0.2);
+  object-fit:contain; box-shadow:0 20px 60px rgba(0,0,0,0.4);
+}
+.img-modal-sku { font-family:var(--mono); font-size:14px; font-weight:600; color:#FFFFFF; }
+.img-modal-actions { display:flex; gap:10px; }
+
+/* Upload zone */
+.upload-zone {
+  border:2px dashed var(--border2); border-radius:12px;
+  padding:24px; text-align:center; cursor:pointer;
+  transition:var(--transition); background:var(--bg);
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color:var(--blue); background:var(--blue-bg);
+}
+.upload-zone p { font-size:12px; color:var(--muted); margin-top:6px; }
+.upload-preview { width:100%; max-height:200px; object-fit:contain; border-radius:8px; margin-top:10px; display:none; }
+
+/* Gallery */
+.gallery-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px; }
+.gallery-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:10px; overflow:hidden; cursor:pointer;
+  transition:var(--transition); box-shadow:var(--shadow);
+}
+.gallery-card:hover { border-color:var(--blue2); box-shadow:var(--shadow2); transform:translateY(-2px); }
+.gallery-img {
+  width:100%; height:120px; object-fit:cover;
+  background:var(--surface2); display:flex; align-items:center;
+  justify-content:center; font-size:32px; color:var(--muted2);
+}
+.gallery-img img { width:100%; height:120px; object-fit:cover; }
+.gallery-info { padding:10px 12px; }
+.gallery-sku { font-family:var(--mono); font-size:10px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.gallery-cat { font-size:10px; color:var(--muted); margin-top:2px; }
+
+/* ── LOADING ── */
+.loading-overlay {
+  position:fixed; inset:0; background:var(--navy);
+  z-index:999; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:16px;
+  transition:opacity 0.4s ease;
+}
+.loading-overlay.hidden { opacity:0; pointer-events:none; }
+.loading-spinner {
+  width:40px; height:40px; border-radius:50%;
+  border:3px solid rgba(255,255,255,0.1);
+  border-top-color:var(--teal);
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:13px; color:var(--muted); }
+.realtime-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--green); display:inline-block;
+  margin-right:5px; animation:pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── TOAST ── */
+.toast {
+  position:fixed; bottom:24px; right:24px;
+  background:var(--text); border:1px solid var(--border2);
+  color:#FFFFFF; padding:12px 18px; border-radius:10px;
+  font-size:13px; font-weight:600; display:none;
+  box-shadow:var(--shadow2); z-index:200;
+  animation:slideUp 0.3s ease;
+}
+.toast.show { display:block; }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+/* ── EMPTY STATE ── */
+.empty { text-align:center; padding:40px; color:var(--muted); }
+.empty-icon { font-size:32px; margin-bottom:8px; }
+.empty p { font-size:13px; }
+
+/* ── MONO ── */
+.mono { font-family:var(--mono); }
+
+/* ── MOBILE ── */
+.mobile-nav {
+  display:none; position:fixed; bottom:0; left:0; right:0;
+  background:var(--surface); border-top:1px solid var(--border);
+  padding:8px 0 12px; z-index:50; box-shadow:0 -4px 12px rgba(0,0,0,0.08);
+}
+.mobile-nav-items { display:flex; justify-content:space-around; }
+.mobile-nav-item { display:flex; flex-direction:column; align-items:center; gap:2px; color:var(--muted); font-size:9px; cursor:pointer; padding:4px 10px; }
+.mobile-nav-item.active { color:var(--blue); }
+.mobile-nav-item .mi { font-size:18px; }
+
+@media(max-width:768px) {
+  .sidebar { display:none; }
+  .kpi-grid { grid-template-columns:repeat(2,1fr); gap:12px; }
+  .grid-2, .grid-3, .fin-grid { grid-template-columns:1fr; }
+  .mobile-nav { display:block; }
+  .content { padding:16px; padding-bottom:80px; }
+  .topbar { padding:0 16px; }
+  .filter-row { gap:6px; }
+}
+</style>
+</head>
+<body>
+<!-- Loading -->
+<div class="loading-overlay" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">กำลังเชื่อมต่อ Supabase...</div>
+</div>
+
+<div class="app">
+
+<!-- ════ SIDEBAR ════ -->
+<div class="sidebar">
+  <div class="brand">
+    <div class="brand-logo">
+      <div class="brand-icon">👟</div>
+      <div class="brand-text">
+        <h2>CWT System</h2>
+        <p>CHENFULI WORLD TRADING</p>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">หลัก</div>
+    <div class="nav-item active" data-page="dashboard">
+      <span class="ni">📊</span> Dashboard
+    </div>
+    <div class="nav-item" data-page="inventory">
+      <span class="ni">📦</span> Inventory
+      <span class="nav-badge" id="nb-inv">0</span>
+    </div>
+    <div class="nav-item" data-page="inbound">
+      <span class="ni">📥</span> Inbound Lots
+    </div>
+    <div class="nav-item" data-page="outbound">
+      <span class="ni">📤</span> Outbound
+      <span class="nav-badge" id="nb-out">0</span>
+    </div>
+    <div class="nav-section">จัดการ</div>
+    <div class="nav-item" data-page="customers">
+      <span class="ni">👤</span> Customers
+    </div>
+    <div class="nav-item" data-page="returns">
+      <span class="ni">↩️</span> Returns
+    </div>
+    <div class="nav-item" data-page="suppliers">
+      <span class="ni">🏭</span> Suppliers
+    </div>
+    <div class="nav-section">รายงาน</div>
+    <div class="nav-item" data-page="reports">
+      <span class="ni">📈</span> Reports
+    </div>
+    <div class="nav-item" data-page="search">
+      <span class="ni">🔍</span> Search
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="avatar">CW</div>
+      <div class="user-info">
+        <p>CWT Admin</p>
+        <span><span class="online-dot"></span>Online</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="page-title" id="page-title">📊 Dashboard</div>
+    <span id="realtime-badge" style="font-size:11px;color:var(--green);display:none">
+      <span class="realtime-dot"></span>Realtime
+    </span>
+    <div class="search-input">
+      <span class="search-icon">🔍</span>
+      <input id="global-search" placeholder="ค้นหา SKU, Order ID..." oninput="globalSearch(this.value)">
+    </div>
+    <button class="btn btn-primary btn-sm" id="add-btn" onclick="openAddModal()">+ เพิ่ม</button>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- ════ DASHBOARD ════ -->
+    <div class="section active" id="sec-dashboard">
+      <div class="kpi-grid" id="kpi-grid"></div>
+
+      <div class="fin-grid" style="margin-bottom:20px" id="fin-grid"></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">📦 Stock by Category</span>
+          </div>
+          <div class="panel-body" id="cat-stats"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">📤 Outbound ล่าสุด</span>
+          </div>
+          <div class="panel-body-flush">
+            <div class="tbl-wrap">
+              <table id="recent-out-table">
+                <thead><tr>
+                  <th>รูป</th><th>วันที่</th><th>SKU</th><th>SIZE</th><th>คู่</th><th>Lot</th><th>Order ID</th>
+                </tr></thead>
+                <tbody id="recent-out-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ INVENTORY ════ -->
+    <div class="section" id="sec-inventory">
+      <div class="filter-row">
+        <select class="filter-select" id="inv-filter-cat" onchange="renderInventory()">
+          <option value="">ทุกหมวดหมู่</option>
+        </select>
+        <select class="filter-select" id="inv-filter-status" onchange="renderInventory()">
+          <option value="">ทุกสถานะ</option>
+          <option value="พร้อมขาย">พร้อมขาย</option>
+          <option value="ขาย">ขาย</option>
+          <option value="ตีคืน">ตีคืน</option>
+        </select>
+        <select class="filter-select" id="inv-filter-lot" onchange="renderInventory()">
+          <option value="">ทุก Lot</option>
+        </select>
+        <input class="filter-select" id="inv-search" placeholder="🔍 ค้นหา SKU..." oninput="renderInventory()" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="openAddModal()">+ เพิ่มสินค้า</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📦 Inventory Master</span>
+          <span class="panel-title mono" id="inv-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>รูป</th><th>SKU</th><th>SIZE</th><th>Supplier</th><th>หมวดหมู่</th>
+                <th>Lot</th><th>จำนวน</th><th>สภาพ</th><th>สถานะ</th>
+                <th>ต้นทุน</th><th>ราคาขาย</th><th>Margin</th>
+              </tr></thead>
+              <tbody id="inv-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ OUTBOUND ════ -->
+    <div class="section" id="sec-outbound">
+      <div class="filter-row">
+        <select class="filter-select" id="out-filter-lot" onchange="renderOutbound()">
+          <option value="">ทุก Lot</option>
+        </select>
+        <select class="filter-select" id="out-filter-cat" onchange="renderOutbound()">
+          <option value="">ทุกหมวดหมู่</option>
+        </select>
+        <input class="filter-select" id="out-search" placeholder="🔍 ค้นหา SKU / Order ID..." oninput="renderOutbound()" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="openAddOutboundModal()">+ บันทึกออเดอร์</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📤 Outbound Sasom</span>
+          <span class="panel-title mono" id="out-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>วันที่</th><th>SKU</th><th>SIZE</th>
+                <th>Lot</th><th>คู่</th><th>Order ID</th><th>ผู้รับ</th>
+                <th>ค่าขนส่ง</th><th>หมายเหตุ</th>
+              </tr></thead>
+              <tbody id="out-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ RETURNS ════ -->
+    <div class="section" id="sec-returns">
+      <div class="filter-row">
+        <button class="btn btn-primary btn-sm" onclick="openAddReturnModal()">+ บันทึกตีคืน</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">↩️ Returns — รายการตีคืน</span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>วันที่</th><th>Order ID</th><th>SKU</th><th>SIZE</th>
+                <th>จำนวน</th><th>Lot</th><th>สาเหตุ</th><th>สภาพ</th>
+              </tr></thead>
+              <tbody id="ret-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SEARCH ════ -->
+    <div class="section" id="sec-search">
+      <div class="panel" style="margin-bottom:16px">
+        <div class="panel-body">
+          <div class="grid-3" style="gap:12px;align-items:end">
+            <div>
+              <label class="form-label">🔎 SKU</label>
+              <input class="form-input" id="s-sku" placeholder="เช่น HQ8708" oninput="doSearch()">
+            </div>
+            <div>
+              <label class="form-label">📦 Lot No.</label>
+              <input class="form-input" id="s-lot" placeholder="เช่น Lot1" oninput="doSearch()">
+            </div>
+            <div>
+              <label class="form-label">🏷️ Order ID</label>
+              <input class="form-input" id="s-order" placeholder="เช่น SMBB-..." oninput="doSearch()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="search-inv-panel">
+        <div class="panel-header">
+          <span class="panel-title">📦 ผลลัพธ์จาก Inventory</span>
+          <span id="search-inv-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>รูป</th><th>SKU</th><th>SIZE</th><th>Supplier</th><th>Lot</th>
+                <th>จำนวน</th><th>สถานะ</th><th>Order ID</th>
+              </tr></thead>
+              <tbody id="search-inv-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel" id="search-out-panel">
+        <div class="panel-header">
+          <span class="panel-title">📤 ผลลัพธ์จาก Outbound</span>
+          <span id="search-out-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>วันที่</th><th>SKU</th><th>SIZE</th><th>คู่</th>
+                <th>Lot</th><th>Order ID</th><th>ผู้รับ</th>
+              </tr></thead>
+              <tbody id="search-out-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ REPORTS ════ -->
+    <div class="section" id="sec-reports">
+      <div class="filter-row">
+        <select class="filter-select" id="rpt-period" onchange="renderReports()">
+          <option value="all">ทั้งหมด</option>
+          <option value="2026-01">มกราคม 2569</option>
+          <option value="2026-02">กุมภาพันธ์ 2569</option>
+          <option value="2026-03">มีนาคม 2569</option>
+        </select>
+      </div>
+
+      <div class="kpi-grid" id="rpt-kpi" style="margin-bottom:20px"></div>
+
+      <div class="grid-2">
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">📦 ส่งออกตาม Lot</span></div>
+          <div class="panel-body" id="rpt-lot-stats"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">📊 ส่งออกตาม SKU</span></div>
+          <div class="panel-body" id="rpt-sku-stats"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+    <!-- ════ INBOUND ════ -->
+    <div class="section" id="sec-inbound">
+      <div class="filter-row">
+        <input class="filter-select" id="inb-search" placeholder="🔍 ค้นหา SKU / Lot..." oninput="renderInbound()" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="openAddInboundModal()">+ บันทึก Inbound</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">📥 Inbound Lots</span>
+          <span id="inb-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>วันที่รับ</th><th>SKU</th><th>SIZE</th>
+                <th>Supplier</th><th>Lot No.</th><th>จำนวนลัง</th>
+                <th>คู่</th><th>Order ID</th><th>Batch ID</th><th>สภาพสินค้า</th><th>หมายเหตุ</th>
+              </tr></thead>
+              <tbody id="inb-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ CUSTOMERS ════ -->
+    <div class="section" id="sec-customers">
+      <div class="filter-row">
+        <input class="filter-select" id="cust-search" placeholder="🔍 ค้นหาชื่อ / Line ID..." oninput="renderCustomers()" style="flex:1">
+        <button class="btn btn-primary btn-sm" onclick="openAddCustomerModal()">+ เพิ่มลูกค้า</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">👤 รายชื่อลูกค้า</span>
+          <span id="cust-count" style="font-size:11px;color:var(--muted)"></span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>รหัส</th><th>ชื่อ-นามสกุล</th><th>ชื่อเล่น/Sasom</th>
+                <th>เบอร์โทร</th><th>Line ID</th><th>จังหวัด</th>
+                <th>แพลตฟอร์ม</th><th>Lot No.</th><th>ยอดสั่ง</th><th>สถานะ</th>
+              </tr></thead>
+              <tbody id="cust-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════ SUPPLIERS ════ -->
+    <div class="section" id="sec-suppliers">
+      <div class="filter-row">
+        <button class="btn btn-primary btn-sm" onclick="openAddSupplierModal()">+ เพิ่ม Supplier</button>
+      </div>
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">🏭 Suppliers</span>
+        </div>
+        <div class="panel-body-flush">
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr>
+                <th>#</th><th>รหัส</th><th>ชื่อ</th><th>ผู้ติดต่อ</th>
+                <th>อีเมล</th><th>ประเทศ</th><th>สถานะ</th>
+                <th>เงื่อนไขชำระ</th><th>Lead Time</th><th>หมายเหตุ</th>
+              </tr></thead>
+              <tbody id="sup-body"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="section" id="sec-gallery">
+      <div class="filter-row">
+        <select class="filter-select" id="gal-filter-cat" onchange="renderGallery()">
+          <option value="">ทุกหมวดหมู่</option>
+        </select>
+        <select class="filter-select" id="gal-filter-img" onchange="renderGallery()">
+          <option value="">ทั้งหมด</option>
+          <option value="has">มีรูปภาพ</option>
+          <option value="none">ยังไม่มีรูป</option>
+        </select>
+        <input class="filter-select" id="gal-search" placeholder="🔍 ค้นหา SKU..." oninput="renderGallery()" style="flex:1">
+      </div>
+      <div id="gallery-container" class="gallery-grid"></div>
+    </div>
+
+  </div><!-- end content -->
+</div><!-- end main -->
+</div><!-- end app -->
+
+<!-- Image Lightbox -->
+<div class="img-modal" id="img-lightbox" onclick="if(event.target===this)this.classList.remove('open')">
+  <img id="lb-img" class="img-modal-img" src="" alt="">
+  <div class="img-modal-sku" id="lb-sku"></div>
+  <div class="img-modal-actions">
+    <button class="btn btn-outline btn-sm" onclick="openImgEditModal(currentLbSku)">✏️ เปลี่ยนรูป</button>
+    <button class="btn btn-outline btn-sm" style="color:var(--red);border-color:var(--red)" onclick="deleteImg(currentLbSku)">🗑️ ลบรูป</button>
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('img-lightbox').classList.remove('open')">✕ ปิด</button>
+  </div>
+</div>
+
+<!-- Edit/Upload Image Modal -->
+<div class="modal-overlay" id="modal-img-edit">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">📷 จัดการรูปภาพ — <span id="img-edit-sku-label"></span></span>
+      <button class="modal-close" onclick="closeModal('modal-img-edit')">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Upload รูปภาพ</label>
+      <div class="upload-zone" id="edit-img-zone" onclick="document.getElementById('edit-img-file').click()"
+           ondragover="e=>{e.preventDefault();this.classList.add('drag-over')}"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleImgDrop(event,'edit-img-preview','edit-img-b64')">
+        <div style="font-size:28px">📷</div>
+        <p>คลิกเพื่อเลือกรูป หรือลากมาวางที่นี่</p>
+        <input type="file" id="edit-img-file" accept="image/*" style="display:none"
+               onchange="handleImgFile(event,'edit-img-preview','edit-img-b64','edit-img-zone')">
+        <img id="edit-img-preview" class="upload-preview">
+      </div>
+      <input type="hidden" id="edit-img-b64">
+    </div>
+    <div class="form-group">
+      <label class="form-label">หรือใส่ URL รูปภาพ</label>
+      <input class="form-input" id="edit-img-url" placeholder="https://..."
+             oninput="previewUrl(this.value,'edit-img-preview','edit-img-b64','edit-img-zone')">
+    </div>
+    <input type="hidden" id="edit-img-sku">
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-img-edit')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveImgEdit()">💾 บันทึกรูป</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODALS ════ -->
+<!-- Add Inventory -->
+<div class="modal-overlay" id="modal-inv">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📦 เพิ่มสินค้าใหม่</span>
+      <button class="modal-close" onclick="closeModal('modal-inv')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">SKU *</label>
+        <input class="form-input" id="f-sku" placeholder="เช่น HQ8708">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SIZE</label>
+        <input class="form-input" id="f-size" placeholder="เช่น 9, 9.5, One Size">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Supplier</label>
+        <select class="form-select" id="f-supplier">
+          <option>LB1</option><option>LB1.1</option><option>LB2</option><option>LB3</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">หมวดหมู่</label>
+        <select class="form-select" id="f-cat">
+          <option>รองเท้า</option><option>ถุงเท้า</option><option>เสื้อ</option>
+          <option>กระเป๋า</option><option>Accessories</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Lot No.</label>
+        <input class="form-input" id="f-lot" placeholder="เช่น Lot1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">จำนวน</label>
+        <input class="form-input" id="f-qty" type="number" placeholder="0" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ต้นทุน (฿)</label>
+        <input class="form-input" id="f-cost" type="number" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ราคาขายส่ง (฿)</label>
+        <input class="form-input" id="f-price" type="number" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">สถานะ</label>
+        <select class="form-select" id="f-status">
+          <option>พร้อมขาย</option><option>ขาย</option><option>Hold</option><option>ตีคืน</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">สภาพสินค้า</label>
+        <select class="form-select" id="f-cond">
+          <option>ปกติ</option><option>มีตำหนิ</option><option>QC</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">หมายเหตุ</label>
+      <input class="form-input" id="f-note" placeholder="หมายเหตุเพิ่มเติม">
+    </div>
+    <div class="form-group">
+      <label class="form-label">📷 รูปภาพสินค้า</label>
+      <div class="upload-zone" id="f-img-zone" onclick="document.getElementById('f-img-file').click()"
+           ondragover="e=>{e.preventDefault();this.classList.add('drag-over')}"
+           ondragleave="this.classList.remove('drag-over')"
+           ondrop="handleImgDrop(event,'f-img-preview','f-img-b64')">
+        <div style="font-size:28px">📷</div>
+        <p>คลิกเพื่อเลือกรูป หรือลากมาวางที่นี่</p>
+        <p style="font-size:10px;margin-top:2px">PNG, JPG, WEBP — max 2MB</p>
+        <input type="file" id="f-img-file" accept="image/*" style="display:none"
+               onchange="handleImgFile(event,'f-img-preview','f-img-b64','f-img-zone')">
+        <img id="f-img-preview" class="upload-preview">
+      </div>
+      <input type="hidden" id="f-img-b64">
+      <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+        <span style="font-size:11px;color:var(--muted)">หรือใส่ URL:</span>
+        <input class="form-input" id="f-img-url" placeholder="https://..." style="flex:1;font-size:11px"
+               oninput="previewUrl(this.value,'f-img-preview','f-img-b64','f-img-zone')">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-inv')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addInventoryItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Outbound -->
+<div class="modal-overlay" id="modal-out">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📤 บันทึกออเดอร์ Outbound</span>
+      <button class="modal-close" onclick="closeModal('modal-out')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">วันที่ส่งออก</label>
+        <input class="form-input" id="fo-date" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Order ID</label>
+        <input class="form-input" id="fo-order" placeholder="SMBB-...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">SKU *</label>
+        <input class="form-input" id="fo-sku" placeholder="เช่น HQ8708" list="sku-list">
+        <datalist id="sku-list"></datalist>
+      </div>
+      <div class="form-group">
+        <label class="form-label">SIZE</label>
+        <input class="form-input" id="fo-size" placeholder="9, 9.5...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Lot No.</label>
+        <input class="form-input" id="fo-lot" placeholder="Lot1, Lot2...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">จำนวนคู่</label>
+        <input class="form-input" id="fo-qty" type="number" placeholder="0" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">ผู้รับสินค้า</label>
+        <input class="form-input" id="fo-recipient" placeholder="ชื่อลูกค้า">
+      </div>
+      <div class="form-group">
+        <label class="form-label">ค่าขนส่ง (฿)</label>
+        <input class="form-input" id="fo-ship" type="number" placeholder="0">
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-out')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addOutboundItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Return -->
+<div class="modal-overlay" id="modal-ret">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">↩️ บันทึกสินค้าตีคืน</span>
+      <button class="modal-close" onclick="closeModal('modal-ret')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">วันที่ตีคืน</label>
+        <input class="form-input" id="fr-date" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Order ID</label>
+        <input class="form-input" id="fr-order" placeholder="SMBB-...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">SKU</label>
+        <input class="form-input" id="fr-sku" placeholder="เช่น HQ8708">
+      </div>
+      <div class="form-group">
+        <label class="form-label">SIZE</label>
+        <input class="form-input" id="fr-size" placeholder="9, 9.5...">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Lot No.</label>
+        <input class="form-input" id="fr-lot" placeholder="Lot...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">จำนวน</label>
+        <input class="form-input" id="fr-qty" type="number" placeholder="0" min="1">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">สาเหตุ</label>
+        <input class="form-input" id="fr-cause" placeholder="เช่น โดนน้ำ, ตำหนิ">
+      </div>
+      <div class="form-group">
+        <label class="form-label">สภาพ</label>
+        <select class="form-select" id="fr-cond">
+          <option>ปกติ</option><option>มีตำหนิ</option><option>เสียหาย</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-ret')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addReturnItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Inbound -->
+<div class="modal-overlay" id="modal-inb">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📥 บันทึก Inbound Lot</span>
+      <button class="modal-close" onclick="closeModal('modal-inb')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">วันที่รับ</label>
+        <input class="form-input" id="fi-date" type="date"></div>
+      <div class="form-group"><label class="form-label">SKU *</label>
+        <input class="form-input" id="fi-sku" placeholder="เช่น HQ8708"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">SIZE</label>
+        <input class="form-input" id="fi-size" placeholder="9, 9.5..."></div>
+      <div class="form-group"><label class="form-label">Supplier</label>
+        <select class="form-select" id="fi-supplier"><option>LB1</option><option>LB1.1</option><option>LB2</option><option>LB3</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Lot No.</label>
+        <input class="form-input" id="fi-lot" placeholder="Lot1..."></div>
+      <div class="form-group"><label class="form-label">จำนวนลัง</label>
+        <input class="form-input" id="fi-boxes" type="number" placeholder="0" min="0"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">จำนวนคู่</label>
+        <input class="form-input" id="fi-qty" type="number" placeholder="0" min="0"></div>
+      <div class="form-group"><label class="form-label">สภาพสินค้า</label>
+        <select class="form-select" id="fi-cond"><option>ปกติ</option><option>มีตำหนิ</option><option>QC</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Order ID</label>
+        <input class="form-input" id="fi-order" placeholder="SMBB-..."></div>
+      <div class="form-group"><label class="form-label">Batch ID</label>
+        <input class="form-input" id="fi-batch" placeholder="Batch..."></div>
+    </div>
+    <div class="form-group"><label class="form-label">หมายเหตุ</label>
+      <input class="form-input" id="fi-note" placeholder="หมายเหตุ"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-inb')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addInboundItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Customer -->
+<div class="modal-overlay" id="modal-cust">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">👤 เพิ่มลูกค้าใหม่</span>
+      <button class="modal-close" onclick="closeModal('modal-cust')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ชื่อ-นามสกุล *</label>
+        <input class="form-input" id="fc-name" placeholder="ชื่อ นามสกุล"></div>
+      <div class="form-group"><label class="form-label">ชื่อเล่น / Sasom</label>
+        <input class="form-input" id="fc-nick" placeholder="@username"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">เบอร์โทร</label>
+        <input class="form-input" id="fc-tel" placeholder="08X-XXX-XXXX"></div>
+      <div class="form-group"><label class="form-label">Line ID</label>
+        <input class="form-input" id="fc-line" placeholder="@lineid"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">จังหวัด</label>
+        <input class="form-input" id="fc-province" placeholder="กรุงเทพฯ"></div>
+      <div class="form-group"><label class="form-label">แพลตฟอร์ม</label>
+        <select class="form-select" id="fc-platform">
+          <option>Sasom</option><option>Line MyShop</option><option>Shopee</option>
+          <option>Instagram</option><option>TikTok</option><option>อื่นๆ</option>
+        </select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Lot No.</label>
+        <input class="form-input" id="fc-lot" placeholder="Lot ที่ซื้อ"></div>
+      <div class="form-group"><label class="form-label">สถานะ</label>
+        <select class="form-select" id="fc-status"><option>ปกติ</option><option>VIP</option><option>ระงับ</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-cust')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addCustomerItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Supplier -->
+<div class="modal-overlay" id="modal-sup">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🏭 เพิ่ม Supplier</span>
+      <button class="modal-close" onclick="closeModal('modal-sup')">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">รหัสซัพ</label>
+        <input class="form-input" id="fs-id" placeholder="LB-1"></div>
+      <div class="form-group"><label class="form-label">ชื่อ Supplier *</label>
+        <input class="form-input" id="fs-name" placeholder="LB1"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ผู้ติดต่อ</label>
+        <input class="form-input" id="fs-contact" placeholder="ชื่อ"></div>
+      <div class="form-group"><label class="form-label">อีเมล</label>
+        <input class="form-input" id="fs-email" placeholder="email@..."></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">ประเทศ</label>
+        <input class="form-input" id="fs-country" placeholder="CHINA"></div>
+      <div class="form-group"><label class="form-label">Lead Time (วัน)</label>
+        <input class="form-input" id="fs-lead" type="number" placeholder="7"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">เงื่อนไขชำระ</label>
+        <input class="form-input" id="fs-payment" placeholder="ชำระก่อน"></div>
+      <div class="form-group"><label class="form-label">สถานะ</label>
+        <select class="form-select" id="fs-status"><option>ใช้งาน</option><option>หยุดชั่วคราว</option><option>ยกเลิก</option></select></div>
+    </div>
+    <div class="form-group"><label class="form-label">หมายเหตุ</label>
+      <input class="form-input" id="fs-note" placeholder="หมายเหตุ"></div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:8px">
+      <button class="btn btn-outline" onclick="closeModal('modal-sup')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addSupplierItem()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Mobile Nav -->
+<div class="mobile-nav">
+  <div class="mobile-nav-items">
+    <div class="mobile-nav-item active" data-page="dashboard"><div class="mi">📊</div>Dashboard</div>
+    <div class="mobile-nav-item" data-page="inventory"><div class="mi">📦</div>Inventory</div>
+    <div class="mobile-nav-item" data-page="inbound"><div class="mi">📥</div>Inbound</div>
+    <div class="mobile-nav-item" data-page="outbound"><div class="mi">📤</div>Outbound</div>
+    <div class="mobile-nav-item" data-page="search"><div class="mi">🔍</div>Search</div>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════
+// SUPABASE CONFIG
+// ════════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://ncnncuewlmhewijorevx.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_PP1KZEgN0i9vTNbfH05HPA_xgJHZNYl';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// In-memory cache (refreshed from Supabase)
+const DATA = { inventory:[], inbound:[], outbound:[], returns:[], customers:[], suppliers:[] };
+
+// ════════════════════════════════════════════════════════════
+// LOAD ALL DATA FROM SUPABASE
+// ════════════════════════════════════════════════════════════
+async function loadData() {
+  try {
+    const [inv, inb, out, ret, cust, sup] = await Promise.all([
+      sb.from('inventory').select('*').order('id'),
+      sb.from('inbound').select('*').order('id'),
+      sb.from('outbound').select('*').order('id'),
+      sb.from('returns').select('*').order('id'),
+      sb.from('customers').select('*').order('id'),
+      sb.from('suppliers').select('*').order('id'),
+    ]);
+    DATA.inventory  = (inv.data  || []).map(mapInv);
+    DATA.inbound    = (inb.data  || []).map(mapInbound);
+    DATA.outbound   = (out.data  || []).map(mapOut);
+    DATA.returns    = (ret.data  || []).map(mapRet);
+    DATA.customers  = (cust.data || []).map(mapCust);
+    DATA.suppliers  = (sup.data  || []).map(mapSup);
+
+    document.getElementById('loading-overlay').classList.add('hidden');
+    document.getElementById('realtime-badge').style.display = 'inline-flex';
+    refreshAll();
+    setupRealtime();
+  } catch(e) {
+    console.error('Supabase load error:', e);
+    document.querySelector('.loading-text').textContent = '❌ เชื่อมต่อไม่ได้ — ตรวจสอบ key';
+  }
+}
+
+// ── DB row → app object mappers ──────────────────────────────
+function mapInv(r) { return {
+  id:r.id, sku:r.sku, size:r.size, supplier:r.supplier, cat:r.category,
+  lot:r.lot_no, qty:r.quantity||0, cond:r.condition, status:r.status,
+  cost:r.cost||0, price_w:r.price_w||0, price_r:r.price_r||0,
+  order_id:r.order_id, batch_id:r.batch_id, recipient:r.recipient,
+  date_in:fmtDate(r.date_in), date_out:fmtDate(r.date_out),
+  note:r.note, image_url:r.image_url
+};}
+function mapInbound(r) { return {
+  id:r.id, date:fmtDate(r.date_in), sku:r.sku, size:r.size,
+  supplier:r.supplier, cat:r.category, lot:r.lot_no,
+  boxes:r.boxes||0, qty:r.quantity||0,
+  order_id:r.order_id, batch_id:r.batch_id, cond:r.condition, note:r.note
+};}
+function mapOut(r) { return {
+  id:r.id, date:fmtDate(r.date_out), sku:r.sku, size:r.size,
+  supplier:r.supplier, lot:r.lot_no||r.note, cat:r.category,
+  qty:r.quantity||0, order_id:r.order_id, batch_id:r.batch_id,
+  recipient:r.recipient, ship:r.shipping_cost||0, note:r.note,
+  cost_per:r.cost_per||0, price_per:r.price_per||0,
+  profit_per:r.profit_per||0, profit_total:r.profit_total||0, margin:r.margin_pct||0
+};}
+function mapRet(r) { return {
+  id:r.id, date:fmtDate(r.date_return), order_id:r.order_id,
+  supplier:r.supplier, lot:r.lot_no, sku:r.sku, size:r.size,
+  qty:r.quantity||0, cause:r.cause, cond:r.condition, note:r.note
+};}
+function mapCust(r) { return {
+  id:r.id, name:r.name, nick:r.nickname, tel:r.phone,
+  line:r.line_id, province:r.province, platform:r.platform,
+  lot:r.lot_no, status:r.status, note:r.note
+};}
+function mapSup(r) { return {
+  id:r.id, code:r.code, name:r.name, contact:r.contact,
+  email:r.email, country:r.country, status:r.status,
+  payment:r.payment_terms, lead:r.lead_time_days, note:r.note
+};}
+
+function fmtDate(d) {
+  if(!d) return null;
+  const dt = new Date(d);
+  if(isNaN(dt)) return d;
+  return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
+}
+function toISO(thaiDate) {
+  if(!thaiDate) return null;
+  const p = String(thaiDate).split('/');
+  if(p.length===3) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+  return thaiDate;
+}
+
+// ════════════════════════════════════════════════════════════
+// REALTIME SUBSCRIPTIONS
+// ════════════════════════════════════════════════════════════
+function setupRealtime() {
+  const tables = ['inventory','inbound','outbound','returns','customers','suppliers'];
+  tables.forEach(tbl => {
+    sb.channel(`${tbl}_changes`)
+      .on('postgres_changes', { event:'*', schema:'public', table:tbl }, async () => {
+        const { data } = await sb.from(tbl).select('*').order('id');
+        if(tbl==='inventory') DATA.inventory = (data||[]).map(mapInv);
+        if(tbl==='inbound')   DATA.inbound   = (data||[]).map(mapInbound);
+        if(tbl==='outbound')  DATA.outbound  = (data||[]).map(mapOut);
+        if(tbl==='returns')   DATA.returns   = (data||[]).map(mapRet);
+        if(tbl==='customers') DATA.customers = (data||[]).map(mapCust);
+        if(tbl==='suppliers') DATA.suppliers = (data||[]).map(mapSup);
+        refreshAll();
+        showToast('🔄 ข้อมูลอัปเดตแล้ว');
+      })
+      .subscribe();
+  });
+}
+
+function refreshAll() {
+  populateInvFilters(); populateOutFilters(); populateGalleryFilters();
+  const page = document.querySelector('.nav-item.active')?.dataset.page || 'dashboard';
+  if(page==='dashboard') renderDashboard();
+  if(page==='inventory') renderInventory();
+  if(page==='inbound')   renderInbound();
+  if(page==='outbound')  renderOutbound();
+  if(page==='customers') renderCustomers();
+  if(page==='returns')   renderReturns();
+  if(page==='suppliers') renderSuppliers();
+  if(page==='reports')   renderReports();
+  if(page==='gallery')   renderGallery();
+  // always refresh dashboard counts
+  const inv=DATA.inventory; const out=DATA.outbound;
+  document.getElementById('nb-inv').textContent = inv.length;
+  document.getElementById('nb-out').textContent = out.length;
+}
+
+// Legacy saveData — no-op (Supabase handles persistence)
+function saveData() {}
+
+
+
+// ════════════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════════════
+const pageTitles = {
+  dashboard:'📊 Dashboard', inventory:'📦 Inventory',
+  inbound:'📥 Inbound Lots', outbound:'📤 Outbound',
+  customers:'👤 Customers', returns:'↩️ Returns',
+  suppliers:'🏭 Suppliers', reports:'📈 Reports',
+  search:'🔍 Search', gallery:'🖼️ Image Gallery'
+};
+const addBtnLabels = {
+  dashboard:'+ เพิ่ม', inventory:'+ เพิ่มสินค้า',
+  inbound:'+ บันทึก Inbound', outbound:'+ บันทึกออเดอร์',
+  customers:'+ เพิ่มลูกค้า', returns:'+ บันทึกตีคืน',
+  suppliers:'+ เพิ่ม Supplier', reports:'', search:'', gallery:''
+};
+
+function showPage(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('sec-'+name).classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[name] || name;
+  document.getElementById('add-btn').textContent = addBtnLabels[name] || '+ เพิ่ม';
+  document.getElementById('add-btn').style.display = name==='search'||name==='reports' ? 'none' : '';
+
+  document.querySelectorAll('.nav-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll(`[data-page="${name}"]`).forEach(n => n.classList.add('active'));
+
+  if(name==='dashboard') renderDashboard();
+  if(name==='inventory') renderInventory();
+  if(name==='inbound')   renderInbound();
+  if(name==='outbound')  renderOutbound();
+  if(name==='customers') renderCustomers();
+  if(name==='returns')   renderReturns();
+  if(name==='suppliers') renderSuppliers();
+  if(name==='reports')   renderReports();
+  if(name==='gallery')   renderGallery();
+}
+
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.addEventListener('click', () => showPage(el.dataset.page, el));
+});
+
+function openAddModal() {
+  const page = document.querySelector('.nav-item.active')?.dataset.page || 'inventory';
+  if(page==='inventory')  document.getElementById('modal-inv').classList.add('open');
+  else if(page==='inbound')   openAddInboundModal();
+  else if(page==='outbound')  openAddOutboundModal();
+  else if(page==='returns')   openAddReturnModal();
+  else if(page==='customers') openAddCustomerModal();
+  else if(page==='suppliers') openAddSupplierModal();
+  else document.getElementById('modal-inv').classList.add('open');
+}
+function openAddOutboundModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fo-date').value = today;
+  // populate SKU datalist
+  const dl = document.getElementById('sku-list');
+  dl.innerHTML = [...new Set(DATA.inventory.map(x=>x.sku))].map(s=>`<option value="${s}">`).join('');
+  document.getElementById('modal-out').classList.add('open');
+}
+function openAddReturnModal() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fr-date').value = today;
+  document.getElementById('modal-ret').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
+});
+
+// ════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════
+function fmt(n) {
+  if(n===null||n===undefined||n==='') return '—';
+  if(typeof n==='number') return n.toLocaleString('th-TH');
+  return n;
+}
+function fmtB(n) {
+  if(!n&&n!==0) return '—';
+  return '฿'+Number(n).toLocaleString('th-TH');
+}
+function truncate(s, n=20) {
+  if(!s) return '—';
+  s = String(s);
+  return s.length>n ? s.slice(0,n)+'…' : s;
+}
+function statusBadge(s) {
+  if(!s) return '';
+  const map = {'พร้อมขาย':'green','ขาย':'blue','Hold':'gold','ตีคืน':'red','QC':'gray'};
+  const cls = map[s] || 'gray';
+  return `<span class="badge badge-${cls}">${s}</span>`;
+}
+function showToast(msg, dur=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = '✅ '+msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+// ════════════════════════════════════════════════════════════
+// DASHBOARD
+// ════════════════════════════════════════════════════════════
+function renderDashboard() {
+  const inv = DATA.inventory;
+  const out = DATA.outbound;
+  const ret = DATA.returns;
+
+  const totalSku = inv.length;
+  const totalStock = inv.reduce((a,x)=>a+Number(x.qty||0),0);
+  const ready = inv.filter(x=>x.status==='พร้อมขาย').reduce((a,x)=>a+Number(x.qty||0),0);
+  const totalOut = out.reduce((a,x)=>a+Number(x.qty||0),0);
+
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">Total SKU Lines</div>
+      <div class="kpi-value">${totalSku}</div>
+      <div class="kpi-sub">รายการในคลัง</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">Total Stock (คู่)</div>
+      <div class="kpi-value">${totalStock.toLocaleString()}</div>
+      <div class="kpi-sub">สต็อกรวม</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">พร้อมขาย</div>
+      <div class="kpi-value">${ready.toLocaleString()}</div>
+      <div class="kpi-sub">Ready to Ship</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Outbound รวม (คู่)</div>
+      <div class="kpi-value">${totalOut.toLocaleString()}</div>
+      <div class="kpi-sub">${out.length} ออเดอร์</div>
+    </div>`;
+
+  // Finance (no cost data in this dataset)
+  document.getElementById('fin-grid').innerHTML = `
+    <div class="fin-card"><div class="fin-card-label">📦 Total SKU Types</div>
+      <div class="fin-card-value blue">${[...new Set(inv.map(x=>x.sku))].length}</div></div>
+    <div class="fin-card"><div class="fin-card-label">📤 Lots ที่ส่งออก</div>
+      <div class="fin-card-value gold">${[...new Set(out.map(x=>x.lot||x.note).filter(Boolean))].length}</div></div>
+    <div class="fin-card"><div class="fin-card-label">↩️ Returns รวม</div>
+      <div class="fin-card-value red">${ret.reduce((a,x)=>a+Number(x.qty||0),0)}</div></div>
+    <div class="fin-card"><div class="fin-card-label">🏭 Supplier</div>
+      <div class="fin-card-value white">${[...new Set(inv.map(x=>x.supplier).filter(Boolean))].length}</div></div>
+    <div class="fin-card"><div class="fin-card-label">📦 Inbound Orders</div>
+      <div class="fin-card-value blue">${[...new Set(out.map(x=>x.order_id).filter(Boolean))].length}</div></div>
+    <div class="fin-card"><div class="fin-card-label">📋 Outbound Rows</div>
+      <div class="fin-card-value green">${out.length}</div></div>`;
+
+  // Category stats
+  const cats = {};
+  inv.forEach(x=>{ const c=x.cat||'อื่นๆ'; cats[c]=(cats[c]||0)+Number(x.qty||0); });
+  const totalCat = Object.values(cats).reduce((a,b)=>a+b,0);
+  document.getElementById('cat-stats').innerHTML = Object.entries(cats)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([cat,qty])=>`
+      <div class="stat-row">
+        <div>
+          <div class="stat-label">${cat}</div>
+          <div class="progress-wrap">
+            <div class="progress-bar-bg" style="width:140px">
+              <div class="progress-bar-fill" style="width:${totalCat?Math.round(qty/totalCat*100):0}%"></div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-value">${qty.toLocaleString()}</div>
+      </div>`).join('');
+
+  // Recent outbound
+  const recent = [...out].slice(-8).reverse();
+  document.getElementById('recent-out-body').innerHTML = recent.map(x=>`
+    <tr>
+      <td>${imgThumb(x.sku,'36px')}</td>
+      <td>${x.date||'—'}</td>
+      <td><b>${x.sku}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td><span class="badge badge-teal">${x.lot||x.note||'—'}</span></td>
+      <td class="mono" style="color:var(--muted);font-size:10px">${truncate(x.order_id,22)}</td>
+    </tr>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// INVENTORY
+// ════════════════════════════════════════════════════════════
+function renderInventory() {
+  const filterCat    = document.getElementById('inv-filter-cat').value;
+  const filterStatus = document.getElementById('inv-filter-status').value;
+  const filterLot    = document.getElementById('inv-filter-lot').value;
+  const search       = (document.getElementById('inv-search').value||'').toLowerCase();
+
+  let data = DATA.inventory;
+  if(filterCat)    data = data.filter(x=>x.cat===filterCat);
+  if(filterStatus) data = data.filter(x=>x.status===filterStatus);
+  if(filterLot)    data = data.filter(x=>x.lot===filterLot);
+  if(search) data = data.filter(x=>
+    (x.sku||'').toLowerCase().includes(search) ||
+    (x.size||'').toLowerCase().includes(search) ||
+    (x.lot||'').toLowerCase().includes(search)
+  );
+
+  document.getElementById('inv-count').textContent = `${data.length} รายการ`;
+  document.getElementById('nb-inv').textContent = DATA.inventory.length;
+
+  document.getElementById('inv-body').innerHTML = data.map((x,i)=>{
+    const margin = x.cost&&x.price_w ? Math.round((x.price_w-x.cost)/x.price_w*100) : null;
+    return `<tr>
+      <td class="mono" style="color:var(--muted)">${i+1}</td>
+      <td>${imgThumb(x.sku)}</td>
+      <td><b>${x.sku}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td>${x.supplier||'—'}</td>
+      <td>${x.cat||'—'}</td>
+      <td><span class="badge badge-teal">${x.lot||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td>${x.cond||'—'}</td>
+      <td>${statusBadge(x.status)}</td>
+      <td class="mono">${x.cost ? fmtB(x.cost) : '—'}</td>
+      <td class="mono">${x.price_w ? fmtB(x.price_w) : '—'}</td>
+      <td class="mono">${margin!==null ? `<span style="color:var(--green)">${margin}%</span>` : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  if(!data.length) document.getElementById('inv-body').innerHTML =
+    '<tr><td colspan="12"><div class="empty"><div class="empty-icon">📭</div><p>ไม่พบข้อมูล</p></div></td></tr>';
+}
+
+// Populate inventory filters
+function populateInvFilters() {
+  const cats = [...new Set(DATA.inventory.map(x=>x.cat).filter(Boolean))].sort();
+  const lots = [...new Set(DATA.inventory.map(x=>x.lot).filter(Boolean))].sort();
+  document.getElementById('inv-filter-cat').innerHTML =
+    '<option value="">ทุกหมวดหมู่</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+  document.getElementById('inv-filter-lot').innerHTML =
+    '<option value="">ทุก Lot</option>'+lots.map(l=>`<option>${l}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// OUTBOUND
+// ════════════════════════════════════════════════════════════
+function renderOutbound() {
+  const filterLot = document.getElementById('out-filter-lot').value;
+  const filterCat = document.getElementById('out-filter-cat').value;
+  const search    = (document.getElementById('out-search').value||'').toLowerCase();
+
+  let data = DATA.outbound;
+  if(filterLot) data = data.filter(x=>(x.lot||x.note)===filterLot);
+  if(filterCat) data = data.filter(x=>x.cat===filterCat);
+  if(search) data = data.filter(x=>
+    (x.sku||'').toLowerCase().includes(search) ||
+    (x.order_id||'').toLowerCase().includes(search) ||
+    (x.recipient||'').toLowerCase().includes(search)
+  );
+
+  document.getElementById('out-count').textContent = `${data.length} รายการ | รวม ${data.reduce((a,x)=>a+Number(x.qty||0),0)} คู่`;
+  document.getElementById('nb-out').textContent = DATA.outbound.length;
+
+  document.getElementById('out-body').innerHTML = data.map((x,i)=>`
+    <tr>
+      <td class="mono" style="color:var(--muted)">${i+1}</td>
+      <td class="mono" style="font-size:11px">${x.date||'—'}</td>
+      <td><b>${x.sku}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td><span class="badge badge-teal">${x.lot||x.note||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.order_id,24)}</td>
+      <td>${x.recipient||'—'}</td>
+      <td class="mono">${x.ship ? fmtB(x.ship) : '—'}</td>
+      <td style="color:var(--muted);font-size:11px">${x.note||'—'}</td>
+    </tr>`).join('');
+
+  if(!data.length) document.getElementById('out-body').innerHTML =
+    '<tr><td colspan="10"><div class="empty"><div class="empty-icon">📭</div><p>ไม่พบข้อมูล</p></div></td></tr>';
+}
+
+function populateOutFilters() {
+  const lots = [...new Set(DATA.outbound.map(x=>x.lot||x.note).filter(Boolean))].sort();
+  const cats  = [...new Set(DATA.outbound.map(x=>x.cat).filter(Boolean))].sort();
+  document.getElementById('out-filter-lot').innerHTML =
+    '<option value="">ทุก Lot</option>'+lots.map(l=>`<option>${l}</option>`).join('');
+  document.getElementById('out-filter-cat').innerHTML =
+    '<option value="">ทุกหมวดหมู่</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// RETURNS
+// ════════════════════════════════════════════════════════════
+function renderReturns() {
+  const data = DATA.returns;
+  document.getElementById('ret-body').innerHTML = data.map((x,i)=>`
+    <tr>
+      <td class="mono" style="color:var(--muted)">${i+1}</td>
+      <td class="mono" style="font-size:11px">${x.date||'—'}</td>
+      <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.order_id,20)}</td>
+      <td><b>${x.sku||'—'}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td><span class="badge badge-teal">${x.lot||'—'}</span></td>
+      <td><span class="badge badge-red">${x.cause||'—'}</span></td>
+      <td>${x.cond||'—'}</td>
+    </tr>`).join('');
+
+  if(!data.length) document.getElementById('ret-body').innerHTML =
+    '<tr><td colspan="9"><div class="empty"><div class="empty-icon">✨</div><p>ยังไม่มีการตีคืน</p></div></td></tr>';
+}
+
+// ════════════════════════════════════════════════════════════
+// SEARCH
+// ════════════════════════════════════════════════════════════
+function doSearch() {
+  const sku   = (document.getElementById('s-sku').value||'').toLowerCase().trim();
+  const lot   = (document.getElementById('s-lot').value||'').toLowerCase().trim();
+  const order = (document.getElementById('s-order').value||'').toLowerCase().trim();
+
+  if(!sku && !lot && !order) {
+    document.getElementById('search-inv-body').innerHTML =
+      '<tr><td colspan="7"><div class="empty"><div class="empty-icon">🔍</div><p>กรอกเงื่อนไขเพื่อค้นหา</p></div></td></tr>';
+    document.getElementById('search-out-body').innerHTML = '';
+    document.getElementById('search-inv-count').textContent = '';
+    document.getElementById('search-out-count').textContent = '';
+    return;
+  }
+
+  const invRes = DATA.inventory.filter(x=>
+    (!sku   || (x.sku||'').toLowerCase().includes(sku)) &&
+    (!lot   || (x.lot||'').toLowerCase().includes(lot)) &&
+    (!order || (x.order_id||'').toLowerCase().includes(order))
+  );
+
+  document.getElementById('search-inv-count').textContent = `${invRes.length} รายการ`;
+  document.getElementById('search-inv-body').innerHTML = invRes.map(x=>`
+    <tr>
+      <td>${imgThumb(x.sku,'36px')}</td>
+      <td><b>${x.sku}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td>${x.supplier||'—'}</td>
+      <td><span class="badge badge-teal">${x.lot||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td>${statusBadge(x.status)}</td>
+      <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.order_id,22)}</td>
+    </tr>`).join('') ||
+    '<tr><td colspan="8"><div class="empty"><div class="empty-icon">📭</div><p>ไม่พบใน Inventory</p></div></td></tr>';
+
+  const outRes = DATA.outbound.filter(x=>
+    (!sku   || (x.sku||'').toLowerCase().includes(sku)) &&
+    (!lot   || (x.lot||x.note||'').toLowerCase().includes(lot)) &&
+    (!order || (x.order_id||'').toLowerCase().includes(order))
+  );
+
+  document.getElementById('search-out-count').textContent = `${outRes.length} รายการ`;
+  document.getElementById('search-out-body').innerHTML = outRes.map(x=>`
+    <tr>
+      <td class="mono" style="font-size:11px">${x.date||'—'}</td>
+      <td><b>${x.sku}</b></td>
+      <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+      <td class="mono">${x.qty}</td>
+      <td><span class="badge badge-teal">${x.lot||x.note||'—'}</span></td>
+      <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.order_id,24)}</td>
+      <td>${x.recipient||'—'}</td>
+    </tr>`).join('') ||
+    '<tr><td colspan="7"><div class="empty"><div class="empty-icon">📭</div><p>ไม่พบใน Outbound</p></div></td></tr>';
+}
+
+function globalSearch(val) {
+  if(!val) return;
+  document.getElementById('s-sku').value = val;
+  showPage('search');
+  doSearch();
+}
+
+// ════════════════════════════════════════════════════════════
+// REPORTS
+// ════════════════════════════════════════════════════════════
+function renderReports() {
+  const period = document.getElementById('rpt-period').value;
+
+  let out = DATA.outbound;
+  if(period !== 'all') {
+    const [yr, mo] = period.split('-').map(Number);
+    out = out.filter(x => {
+      if(!x.date) return false;
+      const parts = x.date.split('/');
+      if(parts.length < 3) return false;
+      const d = new Date(Number(parts[2]), Number(parts[1])-1, Number(parts[0]));
+      return d.getFullYear()===yr && d.getMonth()+1===mo;
+    });
+  }
+
+  const totalQty = out.reduce((a,x)=>a+Number(x.qty||0),0);
+  const totalOrders = [...new Set(out.map(x=>x.order_id).filter(Boolean))].length;
+
+  document.getElementById('rpt-kpi').innerHTML = `
+    <div class="kpi-card blue">
+      <div class="kpi-label">จำนวนแถว</div>
+      <div class="kpi-value">${out.length}</div>
+      <div class="kpi-sub">Outbound rows</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">คู่รวม</div>
+      <div class="kpi-value">${totalQty.toLocaleString()}</div>
+      <div class="kpi-sub">จำนวนคู่ที่ส่ง</div>
+    </div>
+    <div class="kpi-card gold">
+      <div class="kpi-label">Order IDs</div>
+      <div class="kpi-value">${totalOrders}</div>
+      <div class="kpi-sub">ออเดอร์ไม่ซ้ำ</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-label">Returns</div>
+      <div class="kpi-value">${DATA.returns.length}</div>
+      <div class="kpi-sub">รายการตีคืน</div>
+    </div>`;
+
+  // Lot stats
+  const byLot = {};
+  out.forEach(x=>{ const l=x.lot||x.note||'ไม่ระบุ'; byLot[l]=(byLot[l]||0)+Number(x.qty||0); });
+  document.getElementById('rpt-lot-stats').innerHTML = Object.entries(byLot)
+    .sort((a,b)=>b[1]-a[1]).slice(0,10)
+    .map(([l,q])=>`
+      <div class="stat-row">
+        <div><div class="stat-label"><span class="badge badge-teal">${l}</span></div></div>
+        <div class="stat-value">${q.toLocaleString()} คู่</div>
+      </div>`).join('') || '<div class="empty"><p>ไม่มีข้อมูล</p></div>';
+
+  // SKU stats
+  const bySku = {};
+  out.forEach(x=>{ bySku[x.sku]=(bySku[x.sku]||0)+Number(x.qty||0); });
+  document.getElementById('rpt-sku-stats').innerHTML = Object.entries(bySku)
+    .sort((a,b)=>b[1]-a[1]).slice(0,10)
+    .map(([s,q])=>`
+      <div class="stat-row">
+        <div class="stat-label"><b>${s}</b></div>
+        <div class="stat-value">${q.toLocaleString()} คู่</div>
+      </div>`).join('') || '<div class="empty"><p>ไม่มีข้อมูล</p></div>';
+}
+
+// ════════════════════════════════════════════════════════════
+// ADD ITEMS
+// ════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════
+// INBOUND
+// ════════════════════════════════════════════════════════════
+function renderInbound() {
+  const search = (document.getElementById('inb-search').value||'').toLowerCase();
+  let data = DATA.inbound || [];
+  if(search) data = data.filter(x=>
+    (x.sku||'').toLowerCase().includes(search)||
+    (x.lot||'').toLowerCase().includes(search)||
+    (x.order_id||'').toLowerCase().includes(search));
+  document.getElementById('inb-count').textContent = `${data.length} รายการ`;
+  document.getElementById('inb-body').innerHTML = data.map((x,i)=>`<tr>
+    <td class="mono" style="color:var(--muted)">${i+1}</td>
+    <td class="mono" style="font-size:11px">${x.date||'—'}</td>
+    <td><b>${x.sku||'—'}</b></td>
+    <td><span class="badge badge-gray">${x.size||'—'}</span></td>
+    <td>${x.supplier||'—'}</td>
+    <td><span class="badge badge-teal">${x.lot||'—'}</span></td>
+    <td class="mono">${x.boxes||'—'}</td>
+    <td class="mono">${x.qty||'—'}</td>
+    <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.order_id,20)}</td>
+    <td class="mono" style="font-size:10px;color:var(--muted)">${truncate(x.batch_id,14)}</td>
+    <td>${x.cond||'—'}</td>
+    <td style="font-size:11px;color:var(--muted)">${x.note||'—'}</td>
+  </tr>`).join('')||'<tr><td colspan="12"><div class="empty"><div class="empty-icon">📭</div><p>ยังไม่มีข้อมูล Inbound</p></div></td></tr>';
+}
+function openAddInboundModal() {
+  document.getElementById('fi-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('modal-inb').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// CUSTOMERS
+// ════════════════════════════════════════════════════════════
+function renderCustomers() {
+  const search = (document.getElementById('cust-search').value||'').toLowerCase();
+  let data = DATA.customers || [];
+  if(search) data = data.filter(x=>
+    (x.name||'').toLowerCase().includes(search)||
+    (x.line||'').toLowerCase().includes(search)||
+    (x.nick||'').toLowerCase().includes(search));
+  document.getElementById('cust-count').textContent = `${data.length} รายการ`;
+  document.getElementById('cust-body').innerHTML = data.map((x,i)=>`<tr>
+    <td class="mono" style="color:var(--muted)">${i+1}</td>
+    <td class="mono" style="font-size:10px;color:var(--blue2)">CUST-${String(i+1).padStart(3,'0')}</td>
+    <td><b>${x.name||'—'}</b></td>
+    <td style="color:var(--muted)">${x.nick||'—'}</td>
+    <td class="mono">${x.tel||'—'}</td>
+    <td style="color:var(--teal)">${x.line||'—'}</td>
+    <td>${x.province||'—'}</td>
+    <td><span class="badge badge-blue">${x.platform||'—'}</span></td>
+    <td><span class="badge badge-teal">${x.lot||'—'}</span></td>
+    <td class="mono">${(DATA.outbound||[]).filter(o=>o.recipient===x.name).reduce((a,o)=>a+Number(o.qty||0),0)} คู่</td>
+    <td>${x.status==='VIP'?'<span class="badge badge-gold">VIP</span>':x.status==='ระงับ'?'<span class="badge badge-red">ระงับ</span>':'<span class="badge badge-green">ปกติ</span>'}</td>
+  </tr>`).join('')||'<tr><td colspan="11"><div class="empty"><div class="empty-icon">👤</div><p>ยังไม่มีข้อมูลลูกค้า</p></div></td></tr>';
+}
+function openAddCustomerModal() {
+  document.getElementById('modal-cust').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// SUPPLIERS
+// ════════════════════════════════════════════════════════════
+function renderSuppliers() {
+  const data = DATA.suppliers || [];
+  document.getElementById('sup-body').innerHTML = data.map((x,i)=>`<tr>
+    <td class="mono" style="color:var(--muted)">${i+1}</td>
+    <td class="mono" style="color:var(--blue2)">${x.code||'—'}</td>
+    <td><b>${x.name||'—'}</b></td>
+    <td>${x.contact||'—'}</td>
+    <td style="font-size:11px;color:var(--muted)">${x.email||'—'}</td>
+    <td><span class="badge badge-gray">${x.country||'—'}</span></td>
+    <td>${x.status==='ใช้งาน'?'<span class="badge badge-green">ใช้งาน</span>':'<span class="badge badge-red">'+x.status+'</span>'}</td>
+    <td>${x.payment||'—'}</td>
+    <td class="mono">${x.lead?x.lead+' วัน':'—'}</td>
+    <td style="font-size:11px;color:var(--muted)">${x.note||'—'}</td>
+  </tr>`).join('')||'<tr><td colspan="10"><div class="empty"><div class="empty-icon">🏭</div><p>ยังไม่มีข้อมูล Supplier</p></div></td></tr>';
+}
+function openAddSupplierModal() {
+  document.getElementById('modal-sup').classList.add('open');
+}
+
+// ════════════════════════════════════════════════════════════
+// IMAGE MANAGEMENT
+// ════════════════════════════════════════════════════════════
+// Images stored in localStorage as: cwt_img_{sku} = base64 or URL
+
+function getImg(sku) {
+  if(!sku) return null;
+  return localStorage.getItem('cwt_img_' + sku.replace(/[^a-zA-Z0-9]/g,'_'));
+}
+function setImg(sku, data) {
+  if(!sku) return;
+  localStorage.setItem('cwt_img_' + sku.replace(/[^a-zA-Z0-9]/g,'_'), data);
+}
+function delImg(sku) {
+  localStorage.removeItem('cwt_img_' + sku.replace(/[^a-zA-Z0-9]/g,'_'));
+}
+
+function imgThumb(sku, size='44px') {
+  const img = getImg(sku);
+  if(img) {
+    return `<img src="${img}" class="img-thumb" style="width:${size};height:${size}"
+             onclick="openLightbox('${sku.replace(/'/g,"\\'")}',event)"
+             title="${sku}" alt="${sku}">`;
+  }
+  return `<div class="img-placeholder" style="width:${size};height:${size}"
+           onclick="openImgEditModal('${sku.replace(/'/g,"\\'")}',event)"
+           title="คลิกเพื่อเพิ่มรูป">📷</div>`;
+}
+
+// Lightbox
+let currentLbSku = '';
+function openLightbox(sku, e) {
+  if(e) e.stopPropagation();
+  const img = getImg(sku);
+  if(!img) { openImgEditModal(sku); return; }
+  currentLbSku = sku;
+  document.getElementById('lb-img').src = img;
+  document.getElementById('lb-sku').textContent = sku;
+  document.getElementById('img-lightbox').classList.add('open');
+}
+
+function deleteImg(sku) {
+  if(!confirm(`ลบรูป ${sku} ใช่ไหม?`)) return;
+  delImg(sku);
+  document.getElementById('img-lightbox').classList.remove('open');
+  renderInventory(); renderGallery(); renderDashboard();
+  showToast('ลบรูปภาพแล้ว');
+}
+
+// Edit modal
+function openImgEditModal(sku, e) {
+  if(e) e.stopPropagation();
+  document.getElementById('edit-img-sku').value = sku;
+  document.getElementById('img-edit-sku-label').textContent = sku;
+  document.getElementById('edit-img-b64').value = '';
+  document.getElementById('edit-img-url').value = '';
+  const prev = document.getElementById('edit-img-preview');
+  const existing = getImg(sku);
+  if(existing) { prev.src = existing; prev.style.display='block'; }
+  else { prev.src=''; prev.style.display='none'; }
+  document.getElementById('modal-img-edit').classList.add('open');
+}
+
+function saveImgEdit() {
+  const sku = document.getElementById('edit-img-sku').value;
+  const b64 = document.getElementById('edit-img-b64').value;
+  const url = document.getElementById('edit-img-url').value.trim();
+  const data = b64 || url;
+  if(!data) { showToast('กรุณาเลือกรูปหรือใส่ URL'); return; }
+  setImg(sku, data);
+  closeModal('modal-img-edit');
+  renderInventory(); renderGallery(); renderDashboard();
+  showToast(`บันทึกรูป ${sku} เรียบร้อย ✅`);
+}
+
+// File handling
+function handleImgFile(event, previewId, b64Id, zoneId) {
+  const file = event.target.files[0];
+  if(!file) return;
+  if(file.size > 2*1024*1024) { alert('ไฟล์ใหญ่เกิน 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const data = e.target.result;
+    document.getElementById(b64Id).value = data;
+    const prev = document.getElementById(previewId);
+    prev.src = data; prev.style.display = 'block';
+    if(zoneId) document.getElementById(zoneId).classList.remove('drag-over');
+  };
+  reader.readAsDataURL(file);
+}
+function handleImgDrop(event, previewId, b64Id) {
+  event.preventDefault();
+  const file = event.dataTransfer.files[0];
+  if(!file || !file.type.startsWith('image/')) return;
+  if(file.size > 2*1024*1024) { alert('ไฟล์ใหญ่เกิน 2MB'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById(b64Id).value = e.target.result;
+    const prev = document.getElementById(previewId);
+    prev.src = e.target.result; prev.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function previewUrl(url, previewId, b64Id, zoneId) {
+  if(!url) return;
+  document.getElementById(b64Id).value = url;
+  const prev = document.getElementById(previewId);
+  prev.src = url; prev.style.display = 'block';
+}
+
+// Gallery
+function renderGallery() {
+  const filterCat = document.getElementById('gal-filter-cat').value;
+  const filterImg = document.getElementById('gal-filter-img').value;
+  const search    = (document.getElementById('gal-search').value||'').toLowerCase();
+
+  // Get unique SKUs
+  const skuMap = {};
+  DATA.inventory.forEach(x => {
+    if(!skuMap[x.sku]) skuMap[x.sku] = {sku:x.sku, cat:x.cat, supplier:x.supplier, sizes:[]};
+    skuMap[x.sku].sizes.push(x.size);
+  });
+
+  let entries = Object.values(skuMap);
+  if(filterCat) entries = entries.filter(x=>x.cat===filterCat);
+  if(filterImg==='has')  entries = entries.filter(x=>getImg(x.sku));
+  if(filterImg==='none') entries = entries.filter(x=>!getImg(x.sku));
+  if(search) entries = entries.filter(x=>(x.sku||'').toLowerCase().includes(search));
+
+  // Populate gallery filter
+  const cats = [...new Set(Object.values(skuMap).map(x=>x.cat).filter(Boolean))].sort();
+  document.getElementById('gal-filter-cat').innerHTML =
+    '<option value="">ทุกหมวดหมู่</option>'+cats.map(c=>`<option ${filterCat===c?'selected':''}>${c}</option>`).join('');
+
+  if(!entries.length) {
+    document.getElementById('gallery-container').innerHTML =
+      '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">🖼️</div><p>ไม่พบสินค้า</p></div>';
+    return;
+  }
+
+  document.getElementById('gallery-container').innerHTML = entries.map(x => {
+    const img = getImg(x.sku);
+    return `<div class="gallery-card" onclick="img?openLightbox('${x.sku.replace(/'/g,"\\'")}'):openImgEditModal('${x.sku.replace(/'/g,"\\'")}')">
+      <div class="gallery-img">
+        ${img ? `<img src="${img}" alt="${x.sku}">` : `<span>📷</span>`}
+      </div>
+      <div class="gallery-info">
+        <div class="gallery-sku">${x.sku}</div>
+        <div class="gallery-cat">${x.cat||'—'} · ${x.sizes.length} sizes</div>
+        <div style="margin-top:6px">
+          <button class="btn btn-outline btn-sm" style="font-size:9px;padding:3px 8px"
+                  onclick="event.stopPropagation();openImgEditModal('${x.sku.replace(/'/g,"\\'")}')">
+            ${img?'✏️ แก้ไข':'📷 เพิ่มรูป'}
+          </button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function populateGalleryFilters() {
+  const cats = [...new Set(DATA.inventory.map(x=>x.cat).filter(Boolean))].sort();
+  document.getElementById('gal-filter-cat').innerHTML =
+    '<option value="">ทุกหมวดหมู่</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+}
+
+// ════════════════════════════════════════════════════════════
+// ADD FUNCTIONS — Supabase async
+// ════════════════════════════════════════════════════════════
+async function addInventoryItem() {
+  const sku = document.getElementById('f-sku').value.trim();
+  if(!sku) { alert('กรุณากรอก SKU'); return; }
+  const imgData = document.getElementById('f-img-b64').value || document.getElementById('f-img-url').value.trim();
+  const {error} = await sb.from('inventory').insert({
+    sku, size:document.getElementById('f-size').value.trim(),
+    supplier:document.getElementById('f-supplier').value,
+    category:document.getElementById('f-cat').value,
+    lot_no:document.getElementById('f-lot').value.trim(),
+    quantity:Number(document.getElementById('f-qty').value)||0,
+    cost:Number(document.getElementById('f-cost').value)||0,
+    price_w:Number(document.getElementById('f-price').value)||0,
+    status:document.getElementById('f-status').value,
+    condition:document.getElementById('f-cond').value,
+    note:document.getElementById('f-note').value.trim(),
+    image_url:imgData||null,
+  });
+  if(error){alert('Error: '+error.message);return;}
+  if(imgData) setImg(sku, imgData);
+  closeModal('modal-inv');
+  showToast(`เพิ่ม ${sku} เรียบร้อย ✅`);
+  ['f-sku','f-size','f-lot','f-qty','f-cost','f-price','f-note','f-img-b64','f-img-url'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-img-preview').style.display='none';
+}
+
+async function addOutboundItem() {
+  const sku = document.getElementById('fo-sku').value.trim();
+  if(!sku){alert('กรุณากรอก SKU');return;}
+  const dateVal = document.getElementById('fo-date').value;
+  const invItem = DATA.inventory.find(x=>x.sku===sku);
+  const {error} = await sb.from('outbound').insert({
+    date_out: dateVal||null,
+    sku, size:document.getElementById('fo-size').value.trim(),
+    lot_no:document.getElementById('fo-lot').value.trim(),
+    quantity:Number(document.getElementById('fo-qty').value)||0,
+    order_id:document.getElementById('fo-order').value.trim(),
+    recipient:document.getElementById('fo-recipient').value.trim(),
+    shipping_cost:Number(document.getElementById('fo-ship').value)||0,
+    category:invItem?.cat||'', supplier:invItem?.supplier||'LB1',
+  });
+  if(error){alert('Error: '+error.message);return;}
+  closeModal('modal-out');
+  showToast(`บันทึก Outbound ${sku} เรียบร้อย ✅`);
+  ['fo-sku','fo-size','fo-lot','fo-qty','fo-order','fo-recipient','fo-ship'].forEach(id=>document.getElementById(id).value='');
+}
+
+async function addReturnItem() {
+  const sku = document.getElementById('fr-sku').value.trim();
+  if(!sku){alert('กรุณากรอก SKU');return;}
+  const {error} = await sb.from('returns').insert({
+    date_return:document.getElementById('fr-date').value||null,
+    sku, size:document.getElementById('fr-size').value.trim(),
+    lot_no:document.getElementById('fr-lot').value.trim(),
+    order_id:document.getElementById('fr-order').value.trim(),
+    quantity:Number(document.getElementById('fr-qty').value)||0,
+    cause:document.getElementById('fr-cause').value.trim(),
+    condition:document.getElementById('fr-cond').value,
+    supplier:DATA.inventory.find(x=>x.sku===sku)?.supplier||'LB1',
+  });
+  if(error){alert('Error: '+error.message);return;}
+  closeModal('modal-ret');
+  showToast(`บันทึกตีคืน ${sku} เรียบร้อย ✅`);
+  ['fr-sku','fr-size','fr-lot','fr-order','fr-qty','fr-cause'].forEach(id=>document.getElementById(id).value='');
+}
+
+async function addInboundItem() {
+  const sku = document.getElementById('fi-sku').value.trim();
+  if(!sku){alert('กรุณากรอก SKU');return;}
+  const {error} = await sb.from('inbound').insert({
+    date_in:document.getElementById('fi-date').value||null,
+    sku, size:document.getElementById('fi-size').value.trim(),
+    supplier:document.getElementById('fi-supplier').value,
+    lot_no:document.getElementById('fi-lot').value.trim(),
+    boxes:Number(document.getElementById('fi-boxes').value)||0,
+    quantity:Number(document.getElementById('fi-qty').value)||0,
+    condition:document.getElementById('fi-cond').value,
+    order_id:document.getElementById('fi-order').value.trim(),
+    batch_id:document.getElementById('fi-batch').value.trim(),
+    note:document.getElementById('fi-note').value.trim(),
+  });
+  if(error){alert('Error: '+error.message);return;}
+  closeModal('modal-inb');
+  showToast(`บันทึก Inbound ${sku} เรียบร้อย ✅`);
+  ['fi-sku','fi-size','fi-lot','fi-boxes','fi-qty','fi-order','fi-batch','fi-note'].forEach(id=>document.getElementById(id).value='');
+}
+
+async function addCustomerItem() {
+  const name = document.getElementById('fc-name').value.trim();
+  if(!name){alert('กรุณากรอกชื่อ');return;}
+  const {error} = await sb.from('customers').insert({
+    name, nickname:document.getElementById('fc-nick').value.trim(),
+    phone:document.getElementById('fc-tel').value.trim(),
+    line_id:document.getElementById('fc-line').value.trim(),
+    province:document.getElementById('fc-province').value.trim(),
+    platform:document.getElementById('fc-platform').value,
+    lot_no:document.getElementById('fc-lot').value.trim(),
+    status:document.getElementById('fc-status').value,
+  });
+  if(error){alert('Error: '+error.message);return;}
+  closeModal('modal-cust');
+  showToast(`เพิ่มลูกค้า ${name} เรียบร้อย ✅`);
+  ['fc-name','fc-nick','fc-tel','fc-line','fc-province','fc-lot'].forEach(id=>document.getElementById(id).value='');
+}
+
+async function addSupplierItem() {
+  const name = document.getElementById('fs-name').value.trim();
+  if(!name){alert('กรุณากรอกชื่อ Supplier');return;}
+  const {error} = await sb.from('suppliers').insert({
+    code:document.getElementById('fs-id').value.trim(),
+    name, contact:document.getElementById('fs-contact').value.trim(),
+    email:document.getElementById('fs-email').value.trim(),
+    country:document.getElementById('fs-country').value.trim(),
+    lead_time_days:Number(document.getElementById('fs-lead').value)||null,
+    payment_terms:document.getElementById('fs-payment').value.trim(),
+    status:document.getElementById('fs-status').value,
+    note:document.getElementById('fs-note').value.trim(),
+  });
+  if(error){alert('Error: '+error.message);return;}
+  closeModal('modal-sup');
+  showToast(`เพิ่ม Supplier ${name} เรียบร้อย ✅`);
+  ['fs-id','fs-name','fs-contact','fs-email','fs-country','fs-lead','fs-payment','fs-note'].forEach(id=>document.getElementById(id).value='');
+}
+
+// ════════════════════════════════════════════════════════════
+// INIT — async Supabase
+// ════════════════════════════════════════════════════════════
+loadData();
+</script>
+</body>
+</html>
