@@ -600,8 +600,11 @@ option { background:var(--surface); color:var(--text); }
         <select class="filter-select" id="inv-filter-status" onchange="renderInventory()">
           <option value="">ทุกสถานะ</option>
           <option value="พร้อมขาย">พร้อมขาย</option>
-          <option value="ขาย">ขาย</option>
+          <option value="จอง">จอง</option>
+          <option value="Hold">Hold</option>
+          <option value="ขายแล้ว">ขายแล้ว</option>
           <option value="ตีคืน">ตีคืน</option>
+          <option value="QC">QC</option>
         </select>
         <select class="filter-select" id="inv-filter-lot" onchange="renderInventory()">
           <option value="">ทุก Lot</option>
@@ -932,7 +935,9 @@ option { background:var(--surface); color:var(--text); }
       <div class="form-group">
         <label class="form-label">Supplier</label>
         <select class="form-select" id="f-supplier">
-          <option>LB1</option><option>LB1.1</option><option>LB2</option><option>LB3</option>
+          <option value="">เลือก Supplier</option>
+          <option>LB01</option><option>LB02</option><option>LB03</option>
+          <option>LB04</option><option>LB08</option><option>LB12</option>
         </select>
       </div>
       <div class="form-group">
@@ -967,13 +972,15 @@ option { background:var(--surface); color:var(--text); }
       <div class="form-group">
         <label class="form-label">สถานะ</label>
         <select class="form-select" id="f-status">
-          <option>พร้อมขาย</option><option>ขาย</option><option>Hold</option><option>ตีคืน</option>
+          <option>พร้อมขาย</option><option>จอง</option><option>Hold</option>
+          <option>ขายแล้ว</option><option>ตีคืน</option><option>QC</option>
         </select>
       </div>
       <div class="form-group">
         <label class="form-label">สภาพสินค้า</label>
         <select class="form-select" id="f-cond">
-          <option>ปกติ</option><option>มีตำหนิ</option><option>QC</option>
+          <option>ปกติ</option><option>มีตำหนิเล็กน้อย</option>
+          <option>มีตำหนิ</option><option>เสียหาย</option><option>QC</option>
         </select>
       </div>
     </div>
@@ -1103,12 +1110,23 @@ option { background:var(--surface); color:var(--text); }
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">สาเหตุ</label>
-        <input class="form-input" id="fr-cause" placeholder="เช่น โดนน้ำ, ตำหนิ">
+        <select class="form-select" id="fr-cause">
+          <option value="">เลือกสาเหตุ</option>
+          <option>ลูกค้าเปลี่ยนใจ</option>
+          <option>ไซส์ผิด</option>
+          <option>สินค้าผิดรุ่น / ผิดสี</option>
+          <option>สินค้าเสียหาย</option>
+          <option>กล่องเสียหาย</option>
+          <option>ของปลอม / QC ไม่ผ่าน</option>
+          <option>ส่งผิดที่อยู่</option>
+          <option>อื่นๆ</option>
+        </select>
       </div>
       <div class="form-group">
         <label class="form-label">สภาพ</label>
         <select class="form-select" id="fr-cond">
-          <option>ปกติ</option><option>มีตำหนิ</option><option>เสียหาย</option>
+          <option>ปกติ</option><option>มีตำหนิเล็กน้อย</option>
+          <option>มีตำหนิ</option><option>เสียหาย</option><option>ทำลายทิ้ง</option>
         </select>
       </div>
     </div>
@@ -1136,25 +1154,62 @@ option { background:var(--surface); color:var(--text); }
       <div class="form-group"><label class="form-label">SIZE</label>
         <input class="form-input" id="fi-size" placeholder="9, 9.5..."></div>
       <div class="form-group"><label class="form-label">Supplier</label>
-        <select class="form-select" id="fi-supplier"><option>LB1</option><option>LB1.1</option><option>LB2</option><option>LB3</option></select></div>
+        <select class="form-select" id="fi-supplier">
+          <option value="">เลือก Supplier</option>
+          <option>LB01</option><option>LB02</option><option>LB03</option>
+          <option>LB04</option><option>LB08</option><option>LB12</option>
+        </select></div>
     </div>
     <div class="form-row">
       <div class="form-group"><label class="form-label">Lot No.</label>
         <input class="form-input" id="fi-lot" placeholder="Lot1..."></div>
+      <div class="form-group"><label class="form-label">หมวดหมู่</label>
+        <select class="form-select" id="fi-cat">
+          <option>รองเท้า</option><option>ถุงเท้า</option><option>เสื้อ</option>
+          <option>กระเป๋า</option><option>Accessories</option>
+        </select></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">จำนวนลัง</label>
         <input class="form-input" id="fi-boxes" type="number" placeholder="0" min="0"></div>
-    </div>
-    <div class="form-row">
       <div class="form-group"><label class="form-label">จำนวนคู่</label>
         <input class="form-input" id="fi-qty" type="number" placeholder="0" min="0"></div>
-      <div class="form-group"><label class="form-label">สภาพสินค้า</label>
-        <select class="form-select" id="fi-cond"><option>ปกติ</option><option>มีตำหนิ</option><option>QC</option></select></div>
     </div>
     <div class="form-row">
+      <div class="form-group"><label class="form-label">สภาพสินค้า</label>
+        <select class="form-select" id="fi-cond">
+          <option>ปกติ</option><option>มีตำหนิเล็กน้อย</option>
+          <option>มีตำหนิ</option><option>เสียหาย</option><option>QC</option>
+        </select></div>
       <div class="form-group"><label class="form-label">Order ID</label>
         <input class="form-input" id="fi-order" placeholder="SMBB-..."></div>
+    </div>
+    <div class="form-row">
       <div class="form-group"><label class="form-label">Batch ID</label>
         <input class="form-input" id="fi-batch" placeholder="Batch..."></div>
+      <div class="form-group"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">📷 รูปยืนยันสินค้า</label>
+      <div class="form-row" style="gap:10px">
+        <div class="upload-zone" onclick="document.getElementById('fi-img-file').click()" style="padding:16px;cursor:pointer">
+          <div style="font-size:24px;color:var(--gold)">📷</div>
+          <p style="font-size:11px;margin-top:4px">ถ่ายรูป</p>
+          <input type="file" id="fi-img-file" accept="image/*" capture="environment" style="display:none"
+                 onchange="handleImgFile(event,'fi-img-preview','fi-img-b64','fi-img-zone')">
+        </div>
+        <div class="upload-zone" onclick="document.getElementById('fi-img-upload').click()" style="padding:16px;cursor:pointer">
+          <div style="font-size:24px;color:var(--blue)">⬆️</div>
+          <p style="font-size:11px;margin-top:4px">อัปโหลดรูป</p>
+          <input type="file" id="fi-img-upload" accept="image/*" style="display:none"
+                 onchange="handleImgFile(event,'fi-img-preview','fi-img-b64','fi-img-zone')">
+        </div>
+      </div>
+      <div id="fi-img-zone" style="margin-top:6px">
+        <img id="fi-img-preview" class="upload-preview">
+      </div>
+      <input type="hidden" id="fi-img-b64">
+      <p style="font-size:10px;color:var(--muted);margin-top:4px">รองรับ JPG, PNG — ถ่ายรูปจากมือถือได้เลย</p>
     </div>
     <div class="form-group"><label class="form-label">หมายเหตุ</label>
       <input class="form-input" id="fi-note" placeholder="หมายเหตุ"></div>
@@ -2154,16 +2209,20 @@ async function addReturnItem() {
   if(error){alert('Error: '+error.message);return;}
   closeModal('modal-ret');
   showToast(`บันทึกตีคืน ${sku} เรียบร้อย ✅`);
-  ['fr-sku','fr-size','fr-lot','fr-order','fr-qty','fr-cause'].forEach(id=>document.getElementById(id).value='');
+  ['fr-sku','fr-size','fr-lot','fr-order','fr-qty'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fr-cause').value='';
+  document.getElementById('fr-cond').value='ปกติ';
 }
 
 async function addInboundItem() {
   const sku = document.getElementById('fi-sku').value.trim();
   if(!sku){alert('กรุณากรอก SKU');return;}
+  const imgData = document.getElementById('fi-img-b64').value || null;
   const {error} = await sb.from('inbound').insert({
     date_in:document.getElementById('fi-date').value||null,
     sku, size:document.getElementById('fi-size').value.trim(),
     supplier:document.getElementById('fi-supplier').value,
+    category:document.getElementById('fi-cat').value,
     lot_no:document.getElementById('fi-lot').value.trim(),
     boxes:Number(document.getElementById('fi-boxes').value)||0,
     quantity:Number(document.getElementById('fi-qty').value)||0,
@@ -2171,11 +2230,13 @@ async function addInboundItem() {
     order_id:document.getElementById('fi-order').value.trim(),
     batch_id:document.getElementById('fi-batch').value.trim(),
     note:document.getElementById('fi-note').value.trim(),
+    image_url:imgData,
   });
   if(error){alert('Error: '+error.message);return;}
   closeModal('modal-inb');
   showToast(`บันทึก Inbound ${sku} เรียบร้อย ✅`);
-  ['fi-sku','fi-size','fi-lot','fi-boxes','fi-qty','fi-order','fi-batch','fi-note'].forEach(id=>document.getElementById(id).value='');
+  ['fi-sku','fi-size','fi-lot','fi-boxes','fi-qty','fi-order','fi-batch','fi-note','fi-img-b64'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('fi-img-preview').style.display='none';
 }
 
 async function addCustomerItem() {
